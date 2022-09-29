@@ -1,0 +1,10 @@
+.git
+.svelte-kit
+k8s
+node_modules
+target
+public
+*.yaml
+*.rs
+package-lock.json
+package.json

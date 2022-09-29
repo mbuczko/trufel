@@ -1,0 +1,15 @@
+*.db
+*.db-shm
+*.db-wal
+*.paw
+.envrc
+.tern-port
+.svelte-kit
+package-lock.json
+node_modules
+target
+build
+public
+Cargo.lock
+TAGS
+litestream.config
