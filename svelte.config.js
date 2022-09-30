@@ -14,6 +14,7 @@ const config = {
     files: {
       hooks: {server: 'webapp/hooks'},
       lib: 'webapp/lib',
+      assets: 'webapp/static',
       routes: 'webapp/routes',
       serviceWorker: 'webapp/service-worker',
       appTemplate: 'webapp/app.html'

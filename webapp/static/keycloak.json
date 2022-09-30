@@ -1,0 +1,8 @@
+{
+  "realm": "rodzinks",
+  "auth-server-url": "https://auth.rodzinks.pl/",
+  "ssl-required": "external",
+  "resource": "webapp",
+  "public-client": true,
+  "confidential-port": 0
+}
