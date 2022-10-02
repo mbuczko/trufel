@@ -1,0 +1,3 @@
+cd //opt/bitnami/keycloak/bin/
+./kcreg.sh config credentials --server http://localhost:8080 --realm rodzinks --client admin-cli
+./kcreg.sh get webapp --server http://localhost:8080 --realm rodzinks --client admin-cli

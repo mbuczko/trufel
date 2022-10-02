@@ -1,8 +1,7 @@
 <script>
 import SecurityContext from '$lib/SecurityContext.svelte';
-import Callback from '$lib/Callback.svelte';
 </script>
 
 <SecurityContext>
-    <Callback />
+    <slot/>
 </SecurityContext>
