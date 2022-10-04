@@ -1,5 +1,10 @@
 use alcoholic_jwt::ValidationError;
-use axum::{response::IntoResponse, http::{Response, StatusCode}, body::BoxBody, Json};
+use axum::{
+    body::BoxBody,
+    http::{Response, StatusCode},
+    response::IntoResponse,
+    Json,
+};
 use serde_json::json;
 use thiserror::Error;
 
@@ -22,9 +27,13 @@ impl IntoResponse for AuthError {
     fn into_response(self) -> Response<BoxBody> {
         let (status, error_message) = match self {
             AuthError::InvalidToken => (StatusCode::BAD_REQUEST, "Invalid token"),
-            AuthError::JWKSDeserializeError => (StatusCode::SERVICE_UNAVAILABLE, "Cannot deserivalize JWKS"),
+            AuthError::JWKSDeserializeError => {
+                (StatusCode::SERVICE_UNAVAILABLE, "Cannot deserivalize JWKS")
+            }
             AuthError::JWKSFetchError => (StatusCode::SERVICE_UNAVAILABLE, "Cannot fetch JWKS"),
-            AuthError::JWTValidationError(_) => (StatusCode::SERVICE_UNAVAILABLE, "Cannot validate token")
+            AuthError::JWTValidationError(_) => {
+                (StatusCode::SERVICE_UNAVAILABLE, "Cannot validate token")
+            }
         };
         let body = Json(json!({
             "error": error_message,

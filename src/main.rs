@@ -5,15 +5,19 @@ mod jwt;
 mod user;
 mod vault;
 
-use std::{net::SocketAddr, process::exit};
 use axum::{
+    handler::Handler,
     http::{Method, StatusCode},
     routing::get,
-    Extension, Json, Router, handler::Handler
+    Extension, Json, Router,
 };
 use jwt::Claims;
 use semver::Version;
-use tower_http::{cors::{Any, CorsLayer}, compression::CompressionLayer};
+use std::{net::SocketAddr, process::exit};
+use tower_http::{
+    compression::CompressionLayer,
+    cors::{Any, CorsLayer},
+};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use user::User;
 use vault::Vault;
@@ -24,8 +28,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
-            std::env::var("RUST_LOG")
-                .unwrap_or_else(|_| "trufel=debug,tower_http=debug".into()),
+            std::env::var("RUST_LOG").unwrap_or_else(|_| "trufel=debug,tower_http=debug".into()),
         ))
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -75,4 +78,3 @@ async fn user_profile(claims: Claims, vault: Vault) -> Result<Json<User>, Status
         }
     }
 }
-

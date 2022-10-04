@@ -1,8 +1,6 @@
 pub mod migrations;
 
-use sqlx::{
-    postgres::PgConnectOptions, postgres::PgPoolOptions, PgPool
-};
+use sqlx::{postgres::PgConnectOptions, postgres::PgPoolOptions, PgPool};
 
 pub async fn init_pool(db: &str) -> anyhow::Result<PgPool> {
     let options = PgConnectOptions::new()

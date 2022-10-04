@@ -1,13 +1,18 @@
 use alcoholic_jwt::JWKS;
 use axum::{
+    async_trait,
+    extract::{FromRequest, RequestParts},
     http::StatusCode,
-    Extension, async_trait, extract::{FromRequest, RequestParts}, TypedHeader,
+    Extension, TypedHeader,
 };
-use headers::{Authorization, authorization::Bearer};
-use serde_json::{Value, json};
+use headers::{authorization::Bearer, Authorization};
+use serde_json::{json, Value};
 
-use crate::{jwt::{Claims, self}, errors::AuthError, vault::Vault};
-
+use crate::{
+    errors::AuthError,
+    jwt::{self, Claims},
+    vault::Vault,
+};
 
 #[async_trait]
 impl<B> FromRequest<B> for Claims
@@ -42,7 +47,9 @@ where
         let Extension(vault) = Extension::<Vault>::from_request(req).await.map_err(|err| {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(json!({ "error": format!("Cannot open db connections pool: {}", err) }))
+                axum::Json(json!({
+                    "error": format!("Cannot open db connections pool: {}", err)
+                })),
             )
         })?;
         Ok(vault)

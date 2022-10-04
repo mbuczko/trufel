@@ -14,7 +14,7 @@ pub struct IdToken {
     pub email: String,
     pub name: String,
     pub picture: String,
-    pub sub: String
+    pub sub: String,
 }
 
 pub async fn fetch_jwks(authority: &str) -> Result<JWKS, AuthError> {
@@ -25,7 +25,8 @@ pub async fn fetch_jwks(authority: &str) -> Result<JWKS, AuthError> {
         .await
         .map_err(|e| {
             log::error!("JWKS deserializing error: {}", e);
-            AuthError::JWKSDeserializeError})?;
+            AuthError::JWKSDeserializeError
+        })?;
 
     Ok(jwks)
 }
