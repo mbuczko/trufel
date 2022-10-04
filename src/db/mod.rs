@@ -11,7 +11,7 @@ pub async fn init_pool(db: &str) -> anyhow::Result<PgPool> {
         .host("localhost")
         .port(5432)
         .username("trufel_app")
-        .password("1DHwj3TGIUUUOcVr7bUl0J1BN9u6wQj7LpnMoSU1Yn4LPqqE9oE15b7Po9UklPnX");
+        .password("ze88jVyQpv2eaF");
 
     let pool = PgPoolOptions::new()
         .min_connections(1)

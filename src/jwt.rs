@@ -18,12 +18,14 @@ pub struct IdToken {
 }
 
 pub async fn fetch_jwks(authority: &str) -> Result<JWKS, AuthError> {
-    let jwks = reqwest::get(format!("{}{}", authority, ".well-known/jwks.json"))
+    let jwks = reqwest::get(format!("{}{}", authority, "protocol/openid-connect/certs"))
         .await
         .map_err(|_| AuthError::JWKSFetchError)?
         .json::<JWKS>()
         .await
-        .map_err(|_| AuthError::JWKSDeserializeError)?;
+        .map_err(|e| {
+            log::error!("JWKS deserializing error: {}", e);
+            AuthError::JWKSDeserializeError})?;
 
     Ok(jwks)
 }
