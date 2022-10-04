@@ -6,6 +6,7 @@
 .tern-port
 .svelte-kit
 package-lock.json
+package
 node_modules
 target
 build

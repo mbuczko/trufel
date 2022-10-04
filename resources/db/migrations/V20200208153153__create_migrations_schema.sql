@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS migrations (
+  version TEXT NOT NULL UNIQUE,
+  description VARCHAR NOT NULL,
+  script VARCHAR NOT NULL,
+  run_at TIMESTAMP NOT NULL DEFAULT now(),
+  app_semver VARCHAR NOT NULL
+);

@@ -9,7 +9,7 @@ setContext('authClient', { getAuthClient: () => keycloak });
 
 onMount(() => {
 	console.log('on mount');
-	keycloak = new Keycloak();
+	keycloak = new Keycloak('/keycloak.json');
     
  	document.querySelectorAll('iframe').forEach((elem) => {
  	    elem.parentNode.removeChild(elem);
