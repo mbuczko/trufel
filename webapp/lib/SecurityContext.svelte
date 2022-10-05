@@ -1,6 +1,6 @@
 <script>
-import Keycloak from 'keycloak-js';
 import { onMount, setContext } from 'svelte';
+import Keycloak from 'keycloak-js';
 
 let authPromise;
 let keycloak;
@@ -8,18 +8,15 @@ let keycloak;
 setContext('authClient', { getAuthClient: () => keycloak });
 
 onMount(() => {
-	console.log('on mount');
 	keycloak = new Keycloak('/keycloak.json');
-    
- 	document.querySelectorAll('iframe').forEach((elem) => {
- 	    elem.parentNode.removeChild(elem);
- 	});
+ 	/* document.querySelectorAll('iframe').forEach((elem) => {
+ 	   elem.parentNode.removeChild(elem);
+ 	   }); */
     
 	authPromise = keycloak.init({
 		onLoad: 'check-sso',
 		silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso'
 	});
-	console.log(authPromise);
 });
 
 function onLogin() {
@@ -39,7 +36,7 @@ function onLogin() {
 				Please <a href={'#'} on:click={onLogin}>sign in</a>
 			{/if}
 		{:catch error}
-            {console.log(error)}
+            { console.log(error) }
 			<p style="color: red">Somfing wrong...</p>
 		{/await}
 	{/if}

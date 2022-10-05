@@ -8,10 +8,11 @@ mod vault;
 use axum::{
     handler::Handler,
     http::{Method, StatusCode},
-    routing::get,
+    routing::{get, post},
     Extension, Json, Router,
 };
 use jwt::Claims;
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use semver::Version;
 use std::{net::SocketAddr, process::exit};
 use tower_http::{
@@ -46,12 +47,14 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/profile", get(user_profile.layer(CompressionLayer::new())))
-        .layer(Extension((authority, jwks)))
+        .route("/user", post(user_update))
         .layer(Extension(vault))
+        .layer(Extension((authority, jwks)))
         .layer(
             CorsLayer::new()
+                .allow_origin(Any)
                 .allow_methods(vec![Method::GET, Method::POST, Method::PUT])
-                .allow_origin(Any),
+                .allow_headers(vec![AUTHORIZATION, CONTENT_TYPE]),
         );
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3030));
@@ -60,6 +63,15 @@ async fn main() -> anyhow::Result<()> {
         .await
         .unwrap();
 
+    Ok(())
+}
+
+async fn user_update(claims: Claims, vault: Vault) -> Result<(), StatusCode> {
+    log::debug!("Updating user's profile...");
+    user::store(&vault, claims).await.map_err(|e| {
+        log::error!("Could not store user's profile: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
     Ok(())
 }
 

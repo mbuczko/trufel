@@ -1,5 +1,6 @@
+use std::str::FromStr;
+
 use crate::jwt::Claims;
-use crate::jwt::IdToken;
 use crate::vault::Vault;
 
 use serde::Serialize;
@@ -7,6 +8,7 @@ use uuid::Uuid;
 
 #[derive(Serialize, Debug, sqlx::FromRow)]
 pub struct User {
+    pub id: String,
     pub email: String,
     pub name: String,
     pub picture: String,
@@ -27,22 +29,21 @@ pub async fn find_by_claims(vault: &Vault, claims: &Claims) -> anyhow::Result<Op
     Ok(user)
 }
 
-pub async fn store(vault: &Vault, id_token: IdToken) -> anyhow::Result<Uuid> {
+pub async fn store(vault: &Vault, claims: Claims) -> anyhow::Result<Uuid> {
     let mut conn = vault.pool.acquire().await?;
-    let uuid = Uuid::new_v4();
+    let uuid = Uuid::from_str(&claims.sub)?;
 
-    log::debug!("UUID: {}", uuid);
+    assert!(claims.name.is_some());
 
     sqlx::query(r#"
-            INSERT INTO users(user_id, sub, email, name, picture) VALUES($1, $2, $3, $4, $5)
-            ON CONFLICT (sub) DO UPDATE SET email=EXCLUDED.email, name=EXCLUDED.name, picture=EXCLUDED.picture
+            INSERT INTO users(user_id, email, idp_name, idp_picture) VALUES($1, $2, $3, $4)
+            ON CONFLICT (user_id) DO UPDATE SET email=EXCLUDED.email, idp_name=EXCLUDED.idp_name, idp_picture=EXCLUDED.idp_picture
             "#
     )
-    .bind(&uuid)
-    .bind(id_token.sub)
-    .bind(id_token.email)
-    .bind(id_token.name)
-    .bind(id_token.picture)
+    .bind(uuid)
+    .bind(claims.email)
+    .bind(claims.name)
+    .bind(claims.picture)
     .execute(&mut conn)
     .await?;
 
