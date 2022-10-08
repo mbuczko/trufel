@@ -1,5 +1,6 @@
 <script>
 import { identity } from '$lib/store.js';
+import Spinner from '$lib/Spinner.svelte';
 import Login from 'svelte-material-icons/Login.svelte'
 import Logout from 'svelte-material-icons/Logout.svelte'
 
@@ -28,8 +29,10 @@ function logout() {
 			</span>
 		</div>
 		<div class="w-70 text-right text-slate-500">
-			{#if $identity}
-				<span class="p-1 text-sky-200">
+			{#if $identity && !$identity.user_id}
+                <Spinner />
+			{:else if $identity}
+                <span class="p-1 text-sky-200">
 					{$identity.name}
 				</span>
 				|
@@ -45,9 +48,9 @@ function logout() {
 					src={picture}
 					width="384"
 					height="512" />
-			{:else}
-                <span class="inline-block align-center p-1 text-sky-200">
-				    <a class="flex" href={'#'} on:click={login}><span class="pr-1"><Login height="22" width="18" /></span>Sign in</a>
+            {:else}
+                <span class="text-sky-200">
+				    <a class="flex pt-1 pr-1" href={'#'} on:click={login}><span class="pr-1"><Login height="22" width="18" /></span>Sign in</a>
                 </span>
 			{/if}
 		</div>
