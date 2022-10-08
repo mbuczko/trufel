@@ -1,5 +1,7 @@
 <script>
 import { identity } from '$lib/store.js';
+import Login from 'svelte-material-icons/Login.svelte'
+import Logout from 'svelte-material-icons/Logout.svelte'
 
 const picture =
 	($identity && $identity.picture) ||
@@ -31,7 +33,12 @@ function logout() {
 					{$identity.name}
 				</span>
 				|
-				<a class="p-1 pr-3 text-slate-400" href={'#'} on:click={logout}>Logout</a>
+                <span class="p-1 pr-3 text-slate-400 inline-block align-bottom">
+                    <a class="flex " href={'#'} on:click={logout}>
+                        <span class="pr-1"><Logout height="22" width="18" /></span>
+                        Logout
+                    </a>
+                </span>
 				<img
 					alt="avatar"
 					class="inline w-8 h-8 rounded-full"
@@ -39,7 +46,9 @@ function logout() {
 					width="384"
 					height="512" />
 			{:else}
-				<a href={'#'} on:click={login}>Sign in</a>
+                <span class="inline-block align-center p-1 text-sky-200">
+				    <a class="flex" href={'#'} on:click={login}><span class="pr-1"><Login height="22" width="18" /></span>Sign in</a>
+                </span>
 			{/if}
 		</div>
 	</div>

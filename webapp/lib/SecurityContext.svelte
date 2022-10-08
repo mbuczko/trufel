@@ -47,7 +47,7 @@ onMount(() => {
 		keycloak.login({ redirectUri: 'http://localhost:5173/callback' });
 	});
 	nav.addEventListener('logout', (e) => {
-		keycloak.logout();
+		keycloak.logout({ redirectUri: 'http://localhost:5173/'});
 	});
 });
 </script>
