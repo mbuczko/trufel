@@ -9,6 +9,12 @@ use serde_json::json;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+pub enum DbError {
+    #[error("User not found")]
+    UserNotFound,
+}
+
+#[derive(Error, Debug)]
 pub enum AuthError {
     #[error("Invalid token")]
     InvalidToken,
@@ -27,10 +33,10 @@ impl IntoResponse for AuthError {
     fn into_response(self) -> Response<BoxBody> {
         let (status, error_message) = match self {
             AuthError::InvalidToken => (StatusCode::BAD_REQUEST, "Invalid token"),
+            AuthError::JWKSFetchError => (StatusCode::SERVICE_UNAVAILABLE, "Cannot fetch JWKS"),
             AuthError::JWKSDeserializeError => {
                 (StatusCode::SERVICE_UNAVAILABLE, "Cannot deserivalize JWKS")
             }
-            AuthError::JWKSFetchError => (StatusCode::SERVICE_UNAVAILABLE, "Cannot fetch JWKS"),
             AuthError::JWTValidationError(_) => {
                 (StatusCode::SERVICE_UNAVAILABLE, "Cannot validate token")
             }

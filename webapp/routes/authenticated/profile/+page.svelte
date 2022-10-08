@@ -1,7 +1,7 @@
 <script>
 import { onMount, getContext } from 'svelte';
 
-const { getAuthClient } = getContext('authClient');
+const { getAuthClient } = getContext('auth');
 
 let firstName;
 let lastName;
@@ -12,7 +12,6 @@ onMount(() => {
 		.then((profile) => {
 			firstName = profile.firstName;
 			lastName = profile.lastName;
-			console.log('profile', profile);
 		});
 });
 </script>

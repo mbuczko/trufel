@@ -46,7 +46,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let app = Router::new()
-        .route("/profile", get(user_profile.layer(CompressionLayer::new())))
+        .route("/@me", get(user_identity.layer(CompressionLayer::new())))
         .route("/user", post(user_update))
         .layer(Extension(vault))
         .layer(Extension((authority, jwks)))
@@ -66,16 +66,16 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn user_update(claims: Claims, vault: Vault) -> Result<(), StatusCode> {
+async fn user_update(claims: Claims, vault: Vault) -> Result<Json<User>, StatusCode> {
     log::debug!("Updating user's profile...");
-    user::store(&vault, claims).await.map_err(|e| {
+    let user = user::store(&vault, claims).await.map_err(|e| {
         log::error!("Could not store user's profile: {}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
-    Ok(())
+    Ok(Json(user))
 }
 
-async fn user_profile(claims: Claims, vault: Vault) -> Result<Json<User>, StatusCode> {
+async fn user_identity(claims: Claims, vault: Vault) -> Result<Json<User>, StatusCode> {
     match user::find_by_claims(&vault, &claims).await {
         Ok(some_user) => {
             if let Some(user) = some_user {
