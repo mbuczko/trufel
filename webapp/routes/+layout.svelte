@@ -4,9 +4,7 @@ import Spinner from '$lib/Spinner.svelte';
 import Login from 'svelte-material-icons/Login.svelte'
 import Logout from 'svelte-material-icons/Logout.svelte'
 
-const picture =
-	($identity && $identity.picture) ||
-	'https://tailwindcss.com/_next/static/media/sarah-dayan.a620c98f.jpg';
+const defaultPicture = '/avatar.jpg';
 
 let nav;
 
@@ -44,10 +42,10 @@ function logout() {
                 </span>
 				<img
 					alt="avatar"
-					class="inline w-8 h-8 rounded-full"
-					src={picture}
-					width="384"
-					height="512" />
+					     class="inline w-8 h-8 rounded-full"
+					     src={ ($identity && $identity.picture) || defaultPicture}
+					     width="384"
+					     height="512" />
             {:else}
                 <span class="text-sky-200">
 				    <a class="flex pt-1 pr-1" href={'#'} on:click={login}><span class="pr-1"><Login height="22" width="18" /></span>Sign in</a>
