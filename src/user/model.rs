@@ -34,6 +34,10 @@ pub async fn find_by_claims(vault: &Vault, claims: &Claims) -> anyhow::Result<Op
     Ok(user)
 }
 
+#[tracing::instrument(
+    name = "Updating user's data in DB",
+    skip(vault, claims))
+]
 pub async fn store(vault: &Vault, claims: Claims) -> anyhow::Result<User> {
     let mut conn = vault.pool.acquire().await?;
 
@@ -60,7 +64,8 @@ pub async fn store(vault: &Vault, claims: Claims) -> anyhow::Result<User> {
             r#"
             UPDATE users SET email=$1, name=$2, picture=$3
             WHERE user_id=$4
-        "#)
+        "#,
+        )
         .bind(email)
         .bind(&claims.name)
         .bind(&claims.picture)

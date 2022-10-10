@@ -12,9 +12,14 @@ use axum::{
     Extension, Json, Router,
 };
 use jwt::Claims;
+use opentelemetry::{sdk::{trace, Resource, propagation::TraceContextPropagator}, global};
+use opentelemetry::KeyValue;
+use opentelemetry_otlp::WithExportConfig;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use semver::Version;
-use std::{net::SocketAddr, process::exit};
+use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
+use uuid::Uuid;
+use std::{collections::HashMap, net::SocketAddr, process::exit};
 use tower_http::{
     compression::CompressionLayer,
     cors::{Any, CorsLayer},
@@ -27,11 +32,39 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    //let stdout_tracer = stdout::new_pipeline().install_simple();
+    let aspecto_key = std::env::var("ASPECTO_API_KEY").unwrap();
+    let exporter = opentelemetry_otlp::new_exporter()
+        .http()
+        .with_endpoint("https://otelcol.aspecto.io/v1/traces")
+        .with_headers(HashMap::from([("Authorization".into(), aspecto_key)]));
+
+    let aspecto_tracer = opentelemetry_otlp::new_pipeline()
+        .tracing()
+        .with_exporter(exporter)
+        .with_trace_config(
+            trace::config().with_resource(Resource::new(vec![KeyValue::new(
+                "service.name",
+                std::env::var("SERVICE_NAME").unwrap()
+            )])),
+        )
+        .install_batch(opentelemetry::runtime::Tokio)
+        .expect("Error - Failed to create tracer.");
+
+    let formatting_layer = BunyanFormattingLayer::new(
+        std::env::var("SERVICE_NAME").unwrap(),
+        std::io::stdout,
+    );
+
+    global::set_text_map_propagator(TraceContextPropagator::new());
+
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
             std::env::var("RUST_LOG").unwrap_or_else(|_| "trufel=debug,tower_http=debug".into()),
         ))
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_opentelemetry::layer().with_tracer(aspecto_tracer))
+        .with(JsonStorageLayer)
+        .with(formatting_layer)
         .init();
 
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
@@ -66,10 +99,17 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(
+    name = "Post sign-in/sign-up user's data reconciliation",
+    skip(claims, vault),
+    fields(
+        request_id = %Uuid::new_v4()
+    )
+)]
 async fn user_update(claims: Claims, vault: Vault) -> Result<Json<User>, StatusCode> {
-    log::debug!("Updating user's profile...");
+    tracing::info!("Updating user's profile...");
     let user = user::store(&vault, claims).await.map_err(|e| {
-        log::error!("Could not store user's profile: {}", e);
+        tracing::error!("Could not store user's profile: {}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
     Ok(Json(user))
