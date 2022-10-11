@@ -91,7 +91,7 @@ pub async fn store(vault: &Vault, claims: Claims) -> anyhow::Result<User> {
     match find_by_claims(vault, &claims).await {
         Ok(user) => Ok(user.unwrap()),
         Err(e) => {
-            log::error!("User stored but not found. This should not happen: {}", e);
+            tracing::error!("User stored but not found. This should not happen: {}", e);
             bail!(DbError::UserNotFound)
         }
     }

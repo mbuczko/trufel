@@ -1,7 +1,6 @@
 use crate::db::init_pool;
 use crate::db::migrations::upgrade;
 
-use log::debug;
 use semver::Version;
 use sqlx::PgPool;
 
@@ -20,7 +19,7 @@ impl Vault {
 }
 
 pub async fn init_vault(db: &str, app_semver: Version) -> anyhow::Result<Vault> {
-    debug!("Opening database ({})", db);
+    tracing::debug!("Opening database ({})", db);
 
     let vault = Vault::new(db).await;
     let (last_script_version, last_app_version) = match vault.version().await {
@@ -29,7 +28,7 @@ pub async fn init_vault(db: &str, app_semver: Version) -> anyhow::Result<Vault> 
     };
     match last_app_version {
         v if last_app_version < app_semver => {
-            debug!(
+            tracing::debug!(
                 "Upgrading DB schema from {} to latest version: {}",
                 v, app_semver
             );
@@ -40,7 +39,7 @@ pub async fn init_vault(db: &str, app_semver: Version) -> anyhow::Result<Vault> 
             app_semver, v
         ),
         v => {
-            debug!("DB schema already at newest version: {}", v);
+            tracing::debug!("DB schema already at newest version: {}", v);
         }
     }
     Ok(vault)

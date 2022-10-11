@@ -1,6 +1,5 @@
 use crate::vault::Vault;
 
-use log::debug;
 use rust_embed::RustEmbed;
 use semver::Version;
 use sqlx::Executor;
@@ -110,7 +109,7 @@ pub async fn upgrade(
     if let Some(m) = build_migration(base_script_version, app_semver) {
         let mut conn = vault.pool.acquire().await?;
         match conn.execute(m.as_str()).await {
-            Ok(_) => debug!("Upgraded to {}", vault.version().await?.0),
+            Ok(_) => tracing::debug!("Upgraded to {}", vault.version().await?.0),
             Err(e) => panic!("Couldn't update the database. Bailing out: {:?}", e),
         }
     }

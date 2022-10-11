@@ -19,7 +19,7 @@ pub async fn fetch_jwks(authority: &str) -> Result<JWKS, AuthError> {
         .json::<JWKS>()
         .await
         .map_err(|e| {
-            log::error!("JWKS deserializing error: {}", e);
+            tracing::error!("JWKS deserializing error: {}", e);
             AuthError::JWKSDeserializeError
         })?;
 

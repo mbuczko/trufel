@@ -6,25 +6,29 @@ mod user;
 mod vault;
 
 use axum::{
+    body::{Body, BoxBody},
+    extract::{MatchedPath, OriginalUri},
     handler::Handler,
-    http::{Method, StatusCode},
+    http::{Method, Request, Response, StatusCode, uri::Scheme},
     routing::{get, post},
     Extension, Json, Router,
 };
 use jwt::Claims;
-use opentelemetry::{sdk::{trace, Resource, propagation::TraceContextPropagator}, global};
+use opentelemetry::sdk::{trace, Resource};
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
-use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
+use reqwest::header::{self, AUTHORIZATION, CONTENT_TYPE};
 use semver::Version;
-use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
-use uuid::Uuid;
-use std::{collections::HashMap, net::SocketAddr, process::exit};
+use std::{collections::HashMap, net::SocketAddr, process::exit, time::Duration};
 use tower_http::{
     compression::CompressionLayer,
     cors::{Any, CorsLayer},
+    trace::TraceLayer,
 };
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing::{debug_span, field, Span};
+use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
+use tracing_log::LogTracer;
+use tracing_subscriber::{layer::SubscriberExt, Registry};
 use user::User;
 use vault::Vault;
 
@@ -32,6 +36,8 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    LogTracer::init().expect("Failed to set logger");
+
     //let stdout_tracer = stdout::new_pipeline().install_simple();
     let aspecto_key = std::env::var("ASPECTO_API_KEY").unwrap();
     let exporter = opentelemetry_otlp::new_exporter()
@@ -45,27 +51,24 @@ async fn main() -> anyhow::Result<()> {
         .with_trace_config(
             trace::config().with_resource(Resource::new(vec![KeyValue::new(
                 "service.name",
-                std::env::var("SERVICE_NAME").unwrap()
+                std::env::var("SERVICE_NAME").unwrap(),
             )])),
         )
         .install_batch(opentelemetry::runtime::Tokio)
         .expect("Error - Failed to create tracer.");
 
-    let formatting_layer = BunyanFormattingLayer::new(
-        std::env::var("SERVICE_NAME").unwrap(),
-        std::io::stdout,
-    );
+    let formatting_layer =
+        BunyanFormattingLayer::new(std::env::var("SERVICE_NAME").unwrap(), std::io::stdout);
 
-    global::set_text_map_propagator(TraceContextPropagator::new());
-
-    tracing_subscriber::registry()
+    let subscriber = Registry::default()
         .with(tracing_subscriber::EnvFilter::new(
             std::env::var("RUST_LOG").unwrap_or_else(|_| "trufel=debug,tower_http=debug".into()),
         ))
         .with(tracing_opentelemetry::layer().with_tracer(aspecto_tracer))
         .with(JsonStorageLayer)
-        .with(formatting_layer)
-        .init();
+        .with(formatting_layer);
+
+    tracing::subscriber::set_global_default(subscriber)?;
 
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
     let jwks = jwt::fetch_jwks(&authority).await?;
@@ -88,6 +91,11 @@ async fn main() -> anyhow::Result<()> {
                 .allow_origin(Any)
                 .allow_methods(vec![Method::GET, Method::POST, Method::PUT])
                 .allow_headers(vec![AUTHORIZATION, CONTENT_TYPE]),
+        )
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(make_span)
+                .on_response(emit_response_trace_with_id),
         );
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3030));
@@ -99,13 +107,13 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[tracing::instrument(
-    name = "Post sign-in/sign-up user's data reconciliation",
-    skip(claims, vault),
-    fields(
-        request_id = %Uuid::new_v4()
-    )
-)]
+// #[tracing::instrument(
+//     name = "Post sign-in/sign-up user's data reconciliation",
+//     skip(claims, vault),
+//     fields(
+//         request_id = %Uuid::new_v4()
+//     )
+// )]
 async fn user_update(claims: Claims, vault: Vault) -> Result<Json<User>, StatusCode> {
     tracing::info!("Updating user's profile...");
     let user = user::store(&vault, claims).await.map_err(|e| {
@@ -125,8 +133,100 @@ async fn user_identity(claims: Claims, vault: Vault) -> Result<Json<User>, Statu
             }
         }
         Err(e) => {
-            log::error!("Could not fetch user's profile: {}", e);
+            tracing::error!("Could not fetch user's profile: {}", e);
             Err(StatusCode::BAD_REQUEST)
         }
     }
+}
+
+fn http_method(method: &Method) -> String {
+    match method {
+        &Method::CONNECT => "CONNECT".into(),
+        &Method::DELETE => "DELETE".into(),
+        &Method::GET => "GET".into(),
+        &Method::HEAD => "HEAD".into(),
+        &Method::OPTIONS => "OPTIONS".into(),
+        &Method::PATCH => "PATCH".into(),
+        &Method::POST => "POST".into(),
+        &Method::PUT => "PUT".into(),
+        &Method::TRACE => "TRACE".into(),
+        other => other.to_string(),
+    }
+}
+
+fn http_scheme(scheme: &Scheme) -> String {
+    if scheme == &Scheme::HTTP {
+        "http".into()
+    } else if scheme == &Scheme::HTTPS {
+        "https".into()
+    } else {
+        scheme.to_string()
+    }
+}
+
+/// Internal helper for [`tower_http::trace::TraceLayer`] to create
+/// [`tracing::Span`]s around a request.
+fn make_span(request: &Request<Body>) -> Span {
+    let http_route = if let Some(matched_path) = request.extensions().get::<MatchedPath>() {
+        matched_path.as_str().to_owned()
+    } else if let Some(uri) = request.extensions().get::<OriginalUri>() {
+        uri.0.path().to_owned()
+    } else {
+        request.uri().path().to_owned()
+    };
+    let host = request
+        .headers()
+        .get(header::HOST)
+        .map_or("", |h| h.to_str().unwrap_or(""));
+    let scheme = request
+        .uri()
+        .scheme()
+        .map_or_else(|| "HTTP".into(), http_scheme);
+    let http_method = http_method(request.method());
+    let user_agent = request
+        .headers()
+        .get(header::USER_AGENT)
+        .map_or("", |h| h.to_str().unwrap_or(""));
+    let uri = if let Some(uri) = request.extensions().get::<OriginalUri>() {
+        uri.0.clone()
+    } else {
+        request.uri().clone()
+    };
+    let http_target = uri
+        .path_and_query()
+        .map(|path_and_query| path_and_query.to_string())
+        .unwrap_or_else(|| uri.path().to_owned());
+    debug_span!(
+        "http-request",
+        request_duration = tracing::field::Empty,
+        status_code = tracing::field::Empty,
+        traceID = tracing::field::Empty,
+        http.host = host,
+        http.scheme = scheme,
+        http.method = http_method,
+        http.route = http_route,
+        http.target = http_target,
+        http.user_agent = user_agent,
+        http.status_code = tracing::field::Empty,
+        otel.kind = "server",
+
+    )
+}
+
+/// Internal helper for [`tower_http::trace::TraceLayer`] to emit a structured [`tracing::Span`] with specific recorded fields.
+///
+/// Uses a `Loki`-friendly `traceID` that can correlate to `Tempo` distributed traces.
+fn emit_response_trace_with_id(response: &Response<BoxBody>, latency: Duration, span: &Span) {
+    // https://github.com/kube-rs/controller-rs/blob/b99ad0bfbf4ae75f03323bff2796572d4257bd96/src/telemetry.rs#L4-L8
+    use opentelemetry::trace::TraceContextExt;
+    use tracing_opentelemetry::OpenTelemetrySpanExt;
+    let trace_id = span.context().span().span_context().trace_id().to_string();
+    let status_code = &field::display(response.status().as_u16());
+
+    span.record("traceID", &field::display(&trace_id));
+    span.record("request_duration", &field::display(latency.as_micros()));
+    span.record("status_code", status_code);
+    span.record("http.status_code", status_code);
+
+    tracing::debug!("response generated");
 }
