@@ -24,8 +24,14 @@ use tower_http::{
 use tracing_log::LogTracer;
 use user::User;
 use vault::Vault;
+use hugsql;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[derive(HugSql)]
+#[queries = "resources/db/queries/"]
+struct Queries;
+
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
