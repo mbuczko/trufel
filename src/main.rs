@@ -31,8 +31,6 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 async fn main() -> anyhow::Result<()> {
     LogTracer::init().expect("Failed to set logger");
 
-    telemetry::init_telemetry()?;
-
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
     let jwks = jwt::fetch_jwks(&authority).await?;
 
@@ -43,6 +41,8 @@ async fn main() -> anyhow::Result<()> {
             exit(1);
         }
     };
+
+    telemetry::init_telemetry()?;
 
     let app = Router::new()
         .route("/@me", get(user_identity.layer(CompressionLayer::new())))
