@@ -2,8 +2,8 @@ mod db;
 mod errors;
 mod extractors;
 mod jwt;
-mod user;
 mod telemetry;
+mod user;
 mod vault;
 
 use axum::{
@@ -12,6 +12,7 @@ use axum::{
     routing::{get, post},
     Extension, Json, Router,
 };
+use hugsql;
 use jwt::Claims;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use semver::Version;
@@ -24,14 +25,14 @@ use tower_http::{
 use tracing_log::LogTracer;
 use user::User;
 use vault::Vault;
-use hugsql;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(HugSql)]
 #[queries = "resources/db/queries/"]
-struct Queries;
+struct Db {}
 
+// Db::fetch_user_by_id(pool, [id])
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -100,4 +101,3 @@ async fn user_identity(claims: Claims, vault: Vault) -> Result<Json<User>, Statu
         }
     }
 }
-
