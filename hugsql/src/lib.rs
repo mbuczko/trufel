@@ -16,7 +16,7 @@ enum Element {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Query {
-    name: String,
+    pub name: String,
     doc: Option<String>,
     sql: String,
 }
@@ -36,7 +36,11 @@ impl Query {
         }
         Query { name, doc, sql }
     }
+    pub fn is_valid(&self) -> bool {
+        !self.name.is_empty()
+    }
 }
+
 
 /// Find all pairs of the `name = "value"` attribute from the derive input
 fn find_attribute_values(ast: &syn::DeriveInput, attr_name: &str) -> Vec<String> {
@@ -54,6 +58,7 @@ fn find_attribute_values(ast: &syn::DeriveInput, attr_name: &str) -> Vec<String>
 }
 
 fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
+    let mut ts = TokenStream2::new();
     let queries_path = find_attribute_values(ast, "queries");
     if queries_path.len() != 1 {
         panic!(
@@ -62,17 +67,39 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
     }
 
     let name = &ast.ident;
-    quote! {
-        use rust_embed::RustEmbed;
-        #[derive(RustEmbed)]
-        #[folder = "#queries_path"]
-        struct #name;
+    let fns = generate_impl_fns(vec![Query {name: String::from("dupa"), doc: Some(String::from("jasia")), sql: String::from("select")}]);
 
-        impl HugSql for #name {
+        // use rust_embed::RustEmbed;
+        // #[derive(RustEmbed)]
+        // #[folder = "#queries_path"]
+        // struct #name;
 
+    let ts2 = TokenStream2::from(quote! { fn dupa() { println!("dupa"); }});
+    ts.extend(quote! {
+        pub trait HugSql {
+            #fns
         }
-    }
+        impl HugSql for #name {
+        }
+    });
+
+    ts
 }
+
+fn generate_impl_fns(queries: Vec<Query>) -> TokenStream2 {
+    let mut ts = TokenStream2::new();
+    for q in queries {
+        let name = q.name;
+
+        ts.extend(quote! {
+            fn #name () {
+                println!("hello");
+            }
+        })
+    }
+    ts
+}
+
 
 #[proc_macro_derive(HugSql, attributes(queries))]
 pub fn hug_sql(input: TokenStream) -> TokenStream {
@@ -88,7 +115,8 @@ fn parser() -> impl Parser<char, Vec<Query>, Error = Simple<char>> {
         .ignore_then(just("name"))
         .ignore_then(just(':').padded())
         .ignore_then(text::ident())
-        .map(|n| Element::Name(n));
+        .map(|n| Element::Name(n))
+        .labelled("name");
 
     let doc = comment
         .ignore_then(just("doc"))
@@ -105,17 +133,20 @@ fn parser() -> impl Parser<char, Vec<Query>, Error = Simple<char>> {
             v.extend(rhs.0);
             (v, c)
         })
-        .map(|(v, _)| Element::Doc(v.iter().collect::<String>()));
+        .map(|(v, _)| Element::Doc(v.iter().collect::<String>()))
+        .labelled("doc");
 
-    let sql = take_until(name.or(doc).rewind().ignored().or(end()))
-        .map(|(v, _)| Element::Sql(v.iter().collect::<String>()));
+    let sql = take_until(name.or(doc).rewind().ignored().or(end())).padded()
+        .map(|(v, _)| Element::Sql(v.iter().collect::<String>()))
+        .labelled("sql");
 
     let query = name.or(doc)
         .repeated()
         .at_least(1)
         .at_most(2)
         .chain(sql)
-        .map(|elements| Query::from(elements));
+        .map(Query::from);
+
 
     query
         .repeated()
@@ -131,8 +162,7 @@ fn parsing() {
   FROM users
  WHERE user_id = $1
 
-
-  -- name: fetch_user_by_id
+  -- doc: fetch_user_by_id
 UPDATE users
 SET name = $1
 WHERE user_id = $2

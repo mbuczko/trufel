@@ -12,7 +12,7 @@ use axum::{
     routing::{get, post},
     Extension, Json, Router,
 };
-use hugsql;
+use hugsql::HugSql;
 use jwt::Claims;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use semver::Version;
@@ -38,6 +38,7 @@ struct Db {}
 async fn main() -> anyhow::Result<()> {
     LogTracer::init().expect("Failed to set logger");
 
+    Db::dupa();
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
     let jwks = jwt::fetch_jwks(&authority).await?;
 
