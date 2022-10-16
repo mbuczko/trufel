@@ -38,7 +38,7 @@ struct Db {}
 async fn main() -> anyhow::Result<()> {
     LogTracer::init().expect("Failed to set logger");
 
-    Db::dupa();
+    Db::fetch_user_by_id();
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
     let jwks = jwt::fetch_jwks(&authority).await?;
 
