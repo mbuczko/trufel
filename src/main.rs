@@ -30,9 +30,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(HugSql)]
 #[queries = "resources/db/queries/"]
-struct Db {}
-
-// Db::fetch_user_by_id(pool, [id])
+struct Db(User);
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -7,7 +7,7 @@ use std::{fs, path::Path};
 use chumsky::prelude::*;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use syn::{Lit, Meta, MetaNameValue};
+use syn::{Lit, Meta, MetaNameValue, DataStruct, Data, Fields, Type};
 
 #[derive(Debug, PartialEq, Eq)]
 enum Element {
@@ -40,6 +40,27 @@ impl Query {
     }
     pub fn is_valid(&self) -> bool {
         !self.name.is_empty()
+    }
+}
+
+/// Find unnamed struct data
+fn find_struct_data(ast: &syn::DeriveInput) -> Option<&Type> {
+    match ast.data {
+        Data::Struct(DataStruct { ref fields, .. }) => match fields {
+            Fields::Unnamed(fields) => {
+                if fields.unnamed.len() > 1 {
+                    panic!(
+                        "Only one unnamed type expected"
+                    );
+                }
+                if let Some(field) = fields.unnamed.first() {
+                    return Some(&field.ty)
+                }
+                None
+            }
+            _ => None
+        }
+        _ => None
     }
 }
 
@@ -84,13 +105,15 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
             Some(std::fs::canonicalize(e.path()).expect("Could not get canonical path"))
         });
 
+    let ty = find_struct_data(ast);
+
     let mut fns = TokenStream2::new();
 
     for f in files {
         if let Ok(data) = fs::read_to_string(f) {
             match parser().parse(data) {
                 Ok(ast) => {
-                    generate_impl_fns(ast, &mut fns);
+                    generate_impl_fns(ast, ty, &mut fns);
                 }
                 Err(parse_errs) => parse_errs
                     .into_iter()
@@ -110,17 +133,26 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
     });
     ts
 }
-fn generate_impl_fns(queries: Vec<Query>, ts: &mut TokenStream2) {
+fn generate_impl_fns(queries: Vec<Query>, ty: Option<&Type>, ts: &mut TokenStream2) {
     for q in queries {
         let name = format_ident!("{}", q.name);
         let doc = q.doc.unwrap_or_default();
 
-        ts.extend(quote! {
-            #[doc = #doc]
-            fn #name () {
-                println!("dupa");
-            }
-        })
+        if let Some(ty) = ty {
+            ts.extend(quote! {
+                #[doc = #doc]
+                fn #name () -> #ty {
+                    println!("dupa");
+                }
+            })
+        } else {
+            ts.extend(quote! {
+                #[doc = #doc]
+                fn #name () -> {
+                    println!("dupa");
+                }
+            })
+        }
     }
 }
 
