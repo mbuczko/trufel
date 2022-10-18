@@ -23,7 +23,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 use tracing_log::LogTracer;
-use user::User;
+use user::{User};
 use vault::Vault;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -36,7 +36,6 @@ struct Db(User);
 async fn main() -> anyhow::Result<()> {
     LogTracer::init().expect("Failed to set logger");
 
-    Db::fetch_user_by_id();
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
     let jwks = jwt::fetch_jwks(&authority).await?;
 
@@ -53,6 +52,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/@me", get(user_identity.layer(CompressionLayer::new())))
         .route("/user", post(user_update))
+        .route("/test", get(user_test))
         .layer(Extension(vault))
         .layer(Extension((authority, jwks)))
         .layer(
@@ -74,6 +74,16 @@ async fn main() -> anyhow::Result<()> {
         .unwrap();
 
     Ok(())
+}
+
+
+async fn user_test(_claims: Claims, vault: Vault) -> Result<String, StatusCode> {
+    tracing::info!("Updating user's profile...");
+
+    let conn = vault.pool;
+    Db::fetch_user_by_id(&conn, &[123]);
+
+    Ok(String::from("Ok"))
 }
 
 async fn user_update(claims: Claims, vault: Vault) -> Result<Json<User>, StatusCode> {

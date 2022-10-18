@@ -7,7 +7,7 @@ use std::{fs, path::Path};
 use chumsky::prelude::*;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use syn::{Lit, Meta, MetaNameValue, DataStruct, Data, Fields, Type};
+use syn::{Data, DataStruct, Fields, Lit, Meta, MetaNameValue, Type};
 
 #[derive(Debug, PartialEq, Eq)]
 enum Element {
@@ -38,7 +38,7 @@ impl Query {
         }
         Query { name, doc, sql }
     }
-    pub fn is_valid(&self) -> bool {
+    pub fn _is_valid(&self) -> bool {
         !self.name.is_empty()
     }
 }
@@ -49,18 +49,16 @@ fn find_struct_data(ast: &syn::DeriveInput) -> Option<&Type> {
         Data::Struct(DataStruct { ref fields, .. }) => match fields {
             Fields::Unnamed(fields) => {
                 if fields.unnamed.len() > 1 {
-                    panic!(
-                        "Only one unnamed type expected"
-                    );
+                    panic!("Only one unnamed type expected");
                 }
                 if let Some(field) = fields.unnamed.first() {
-                    return Some(&field.ty)
+                    return Some(&field.ty);
                 }
                 None
             }
-            _ => None
-        }
-        _ => None
+            _ => None,
+        },
+        _ => None,
     }
 }
 
@@ -125,10 +123,11 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
     let name = &ast.ident;
     let mut ts = TokenStream2::new();
     ts.extend(quote! {
-        pub trait HugSql {
+        use sqlx::Database;
+        pub trait HugSql<'q> {
             #fns
         }
-        impl HugSql for #name {
+        impl<'q> HugSql<'q> for #name {
         }
     });
     ts
@@ -141,8 +140,9 @@ fn generate_impl_fns(queries: Vec<Query>, ty: Option<&Type>, ts: &mut TokenStrea
         if let Some(ty) = ty {
             ts.extend(quote! {
                 #[doc = #doc]
-                fn #name () -> #ty {
-                    println!("dupa");
+                fn #name<DB: sqlx::Database, T: 'q + Send + sqlx::Encode<'q, DB> + sqlx::Type<DB>> (conn: &sqlx::Pool<sqlx::Postgres>, params: &[T]) {
+                    sqlx::query_as::<_, #ty>("SELECT * FROM users")
+                        .fetch(conn);
                 }
             })
         } else {
