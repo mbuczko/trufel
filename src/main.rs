@@ -81,7 +81,7 @@ async fn user_test(_claims: Claims, vault: Vault) -> Result<String, StatusCode> 
     tracing::info!("Updating user's profile...");
 
     let conn = vault.pool;
-    Db::fetch_user_by_id(&conn, &[123]);
+    Db::fetch_user_by_id(&conn, &vec![123]).await;
 
     Ok(String::from("Ok"))
 }

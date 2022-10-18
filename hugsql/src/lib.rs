@@ -123,7 +123,8 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
     let name = &ast.ident;
     let mut ts = TokenStream2::new();
     ts.extend(quote! {
-        use sqlx::Database;
+        use futures_core::stream::BoxStream;
+        #[async_trait::async_trait]
         pub trait HugSql<'q> {
             #fns
         }
@@ -132,6 +133,8 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
     });
     ts
 }
+
+// -> futures::future::BoxFuture<'e, Result<Option<<sqlx::Database>::Row>, Error>>
 fn generate_impl_fns(queries: Vec<Query>, ty: Option<&Type>, ts: &mut TokenStream2) {
     for q in queries {
         let name = format_ident!("{}", q.name);
@@ -140,9 +143,10 @@ fn generate_impl_fns(queries: Vec<Query>, ty: Option<&Type>, ts: &mut TokenStrea
         if let Some(ty) = ty {
             ts.extend(quote! {
                 #[doc = #doc]
-                fn #name<DB: sqlx::Database, T: 'q + Send + sqlx::Encode<'q, DB> + sqlx::Type<DB>> (conn: &sqlx::Pool<sqlx::Postgres>, params: &[T]) {
+                async fn #name<'e, DB: sqlx::Database, T: 'q + Sync + Send + sqlx::Encode<'q, DB> + sqlx::Type<DB>> (conn: &'e sqlx::Pool<sqlx::Postgres>, params: &[T]) -> BoxStream<'e, Result<#ty, sqlx::Error>>
+                {
                     sqlx::query_as::<_, #ty>("SELECT * FROM users")
-                        .fetch(conn);
+                        .fetch(conn)
                 }
             })
         } else {
