@@ -23,7 +23,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 use tracing_log::LogTracer;
-use user::{User};
+use user::User;
 use vault::Vault;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -66,7 +66,6 @@ async fn main() -> anyhow::Result<()> {
                 .make_span_with(telemetry::make_span)
                 .on_response(telemetry::emit_response_trace_with_id),
         );
-
     let addr = SocketAddr::from(([0, 0, 0, 0], 3030));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -76,12 +75,16 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-
 async fn user_test(_claims: Claims, vault: Vault) -> Result<String, StatusCode> {
     tracing::info!("Updating user's profile...");
 
     let conn = vault.pool;
-    Db::fetch_user_by_id(&conn, &vec![123]).await;
+    let str = String::from("srele morele");
+    let mut params = QueryParams::new();
+    params.push(1);
+    params.push("dupa");
+    params.push(str);
+    Db::fetch_user_by_id(&conn, params).await;
 
     Ok(String::from("Ok"))
 }

@@ -124,11 +124,45 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
     let mut ts = TokenStream2::new();
     ts.extend(quote! {
         use futures_core::stream::BoxStream;
+        use sqlx::Arguments;
         #[async_trait::async_trait]
         pub trait HugSql<'q> {
             #fns
         }
         impl<'q> HugSql<'q> for #name {
+        }
+
+        pub struct QueryParams<'q, DB: sqlx::Database> {
+            args: <DB as sqlx::database::HasArguments<'q>>::Arguments,
+            count: usize,
+        }
+        impl<'q, DB: sqlx::Database> QueryParams<'q, DB> {
+            pub fn new() -> Self {
+                Self {
+                    args: Default::default(),
+                    count: 0,
+                }
+            }
+            pub fn extend<I, T>(&mut self, vals: I)
+            where
+                I: IntoIterator<Item = T>,
+                T: 'q + Send + sqlx::Encode<'q, DB> + sqlx::Type<DB>,
+            {
+                for item in vals {
+                    self.args.add(item);
+                    self.count += 1;
+                }
+            }
+            pub fn push<T>(&mut self, val: T)
+            where
+                T: 'q + Send + sqlx::Encode<'q, DB> + sqlx::Type<DB>,
+            {
+                self.args.add(val);
+                self.count += 1;
+            }
+            pub fn len(&self) -> usize {
+                self.count
+            }
         }
     });
     ts
@@ -143,7 +177,7 @@ fn generate_impl_fns(queries: Vec<Query>, ty: Option<&Type>, ts: &mut TokenStrea
         if let Some(ty) = ty {
             ts.extend(quote! {
                 #[doc = #doc]
-                async fn #name<'e, DB: sqlx::Database, T: 'q + Sync + Send + sqlx::Encode<'q, DB> + sqlx::Type<DB>> (conn: &'e sqlx::Pool<sqlx::Postgres>, params: &[T]) -> BoxStream<'e, Result<#ty, sqlx::Error>>
+                async fn #name<'e, DB: sqlx::Database> (conn: &'e sqlx::Pool<sqlx::Postgres>, params: QueryParams<'e, DB>) -> BoxStream<'e, Result<#ty, sqlx::Error>>
                 {
                     sqlx::query_as::<_, #ty>("SELECT * FROM users")
                         .fetch(conn)
