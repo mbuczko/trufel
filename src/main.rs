@@ -16,6 +16,7 @@ use hugsql::HugSql;
 use jwt::Claims;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use semver::Version;
+use sqlx::postgres::PgArguments;
 use std::{net::SocketAddr, process::exit};
 use tower_http::{
     compression::CompressionLayer,
@@ -30,7 +31,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(HugSql)]
 #[queries = "resources/db/queries/"]
-struct Db(User);
+struct Db {}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -80,11 +81,13 @@ async fn user_test(_claims: Claims, vault: Vault) -> Result<String, StatusCode> 
 
     let conn = vault.pool;
     let str = String::from("srele morele");
-    let mut params = QueryParams::new();
-    params.push(1);
-    params.push("dupa");
-    params.push(str);
-    Db::fetch_user_by_id(&conn, params).await;
+    // let mut params: QueryParams<Postgres> = QueryParams::new();
+    // params.push(1);
+    // params.push("dupa");
+    // params.push(str);
+    let params = PgArguments::default();
+    Db::fetch_user_by_id::<User>(&conn, params).await;
+    // Db::fetch_user_by_id<User>(params![1, str]).await;
 
     Ok(String::from("Ok"))
 }

@@ -103,7 +103,7 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
             Some(std::fs::canonicalize(e.path()).expect("Could not get canonical path"))
         });
 
-    let ty = find_struct_data(ast);
+    // let _ty = find_struct_data(ast);
 
     let mut fns = TokenStream2::new();
 
@@ -111,7 +111,7 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
         if let Ok(data) = fs::read_to_string(f) {
             match parser().parse(data) {
                 Ok(ast) => {
-                    generate_impl_fns(ast, ty, &mut fns);
+                    generate_impl_fns(ast, &mut fns);
                 }
                 Err(parse_errs) => parse_errs
                     .into_iter()
@@ -124,73 +124,34 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
     let mut ts = TokenStream2::new();
     ts.extend(quote! {
         use futures_core::stream::BoxStream;
-        use sqlx::Arguments;
+        use sqlx::{database::HasArguments, postgres::{PgPool, Postgres}, Arguments, IntoArguments, Type, Database};
+
         #[async_trait::async_trait]
         pub trait HugSql<'q> {
             #fns
         }
         impl<'q> HugSql<'q> for #name {
         }
-
-        pub struct QueryParams<'q, DB: sqlx::Database> {
-            args: <DB as sqlx::database::HasArguments<'q>>::Arguments,
-            count: usize,
-        }
-        impl<'q, DB: sqlx::Database> QueryParams<'q, DB> {
-            pub fn new() -> Self {
-                Self {
-                    args: Default::default(),
-                    count: 0,
-                }
-            }
-            pub fn extend<I, T>(&mut self, vals: I)
-            where
-                I: IntoIterator<Item = T>,
-                T: 'q + Send + sqlx::Encode<'q, DB> + sqlx::Type<DB>,
-            {
-                for item in vals {
-                    self.args.add(item);
-                    self.count += 1;
-                }
-            }
-            pub fn push<T>(&mut self, val: T)
-            where
-                T: 'q + Send + sqlx::Encode<'q, DB> + sqlx::Type<DB>,
-            {
-                self.args.add(val);
-                self.count += 1;
-            }
-            pub fn len(&self) -> usize {
-                self.count
-            }
-        }
     });
     ts
 }
 
-// -> futures::future::BoxFuture<'e, Result<Option<<sqlx::Database>::Row>, Error>>
-fn generate_impl_fns(queries: Vec<Query>, ty: Option<&Type>, ts: &mut TokenStream2) {
+fn generate_impl_fns(queries: Vec<Query>, ts: &mut TokenStream2) {
     for q in queries {
         let name = format_ident!("{}", q.name);
         let doc = q.doc.unwrap_or_default();
 
-        if let Some(ty) = ty {
-            ts.extend(quote! {
-                #[doc = #doc]
-                async fn #name<'e, DB: sqlx::Database> (conn: &'e sqlx::Pool<sqlx::Postgres>, params: QueryParams<'e, DB>) -> BoxStream<'e, Result<#ty, sqlx::Error>>
-                {
-                    sqlx::query_as::<_, #ty>("SELECT * FROM users")
-                        .fetch(conn)
-                }
-            })
-        } else {
-            ts.extend(quote! {
-                #[doc = #doc]
-                fn #name () -> {
-                    println!("dupa");
-                }
-            })
-        }
+        ts.extend(quote! {
+            #[doc = #doc]
+            async fn #name<'e, T> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> BoxStream<'e, Result<T, sqlx::Error>>
+            where
+                T: Send + Unpin + for<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> + 'e,
+            {
+               sqlx::query_as_with("SELECT * FROM users", params).fetch(conn)
+
+            }
+
+        })
     }
 }
 
