@@ -85,7 +85,9 @@ async fn user_test(_claims: Claims, vault: Vault) -> Result<String, StatusCode> 
     // params.push(1);
     // params.push("dupa");
     // params.push(str);
-    let params = PgArguments::default();
+    let mut params = PgArguments::default();
+    params.add(1);
+    params.add(str);
     Db::fetch_user_by_id::<User>(&conn, params).await;
     // Db::fetch_user_by_id<User>(params![1, str]).await;
 

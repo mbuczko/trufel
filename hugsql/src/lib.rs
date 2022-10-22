@@ -9,9 +9,17 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use syn::{Data, DataStruct, Fields, Lit, Meta, MetaNameValue, Type};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Arity {
+    FetchAll,
+    FetchOne,
+    FetchOptional,
+    FetchStream,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum Element {
-    Name(String),
+    Meta(String, Arity),
     Doc(String),
     Sql(String),
 }
@@ -19,6 +27,7 @@ enum Element {
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Query {
     pub name: String,
+    pub arity: Arity,
     pub doc: Option<String>,
     pub sql: String,
 }
@@ -28,37 +37,35 @@ impl Query {
         let mut name = String::default();
         let mut doc = None;
         let mut sql = String::default();
+        let mut arity = Arity::FetchAll;
 
         for e in elements {
             match e {
-                Element::Name(n) => name = n,
+                Element::Meta(n, a) => {
+                    name = n;
+                    arity = a;
+                },
                 Element::Doc(d) => doc = Some(d),
                 Element::Sql(s) => sql = s,
             }
         }
-        Query { name, doc, sql }
+        Query {
+            name,
+            arity,
+            doc,
+            sql,
+        }
     }
     pub fn _is_valid(&self) -> bool {
         !self.name.is_empty()
     }
-}
-
-/// Find unnamed struct data
-fn find_struct_data(ast: &syn::DeriveInput) -> Option<&Type> {
-    match ast.data {
-        Data::Struct(DataStruct { ref fields, .. }) => match fields {
-            Fields::Unnamed(fields) => {
-                if fields.unnamed.len() > 1 {
-                    panic!("Only one unnamed type expected");
-                }
-                if let Some(field) = fields.unnamed.first() {
-                    return Some(&field.ty);
-                }
-                None
-            }
-            _ => None,
-        },
-        _ => None,
+    pub fn arity_from_char(ch: char) -> Arity {
+        match ch {
+            '?' => Arity::FetchOptional,
+            '!' => Arity::FetchStream,
+            '1' => Arity::FetchOne,
+            _ => Arity::FetchAll,
+        }
     }
 }
 
@@ -102,8 +109,6 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
         .filter_map(move |e| {
             Some(std::fs::canonicalize(e.path()).expect("Could not get canonical path"))
         });
-
-    // let _ty = find_struct_data(ast);
 
     let mut fns = TokenStream2::new();
 
@@ -165,16 +170,23 @@ pub fn hug_sql(input: TokenStream) -> TokenStream {
 
 fn parser() -> impl Parser<char, Vec<Query>, Error = Simple<char>> {
     let comment = just("--").padded();
+
+    let arity = just(':')
+        .ignore_then(just('*').or(just('?')).or(just('!')).or(just('1')))
+        .labelled("arity");
+
     let name = comment
-        .ignore_then(just("name"))
-        .ignore_then(just(':').padded())
+        .ignore_then(just(':'))
+        .ignore_then(just("name").padded())
         .ignore_then(text::ident())
-        .map(|n| Element::Name(n))
+        .padded()
+        .then(arity)
+        .map(|(ident, a)| Element::Meta(ident, Query::arity_from_char(a)))
         .labelled("name");
 
     let doc = comment
-        .ignore_then(just("doc"))
-        .ignore_then(just(':').padded())
+        .ignore_then(just(':'))
+        .ignore_then(just("doc").padded())
         .ignore_then(take_until(just('\n')))
         .then(
             comment
@@ -209,14 +221,14 @@ fn parser() -> impl Parser<char, Vec<Query>, Error = Simple<char>> {
 #[test]
 fn parsing() {
     let input = r#"
--- name: fetch_user_by_id
--- doc: Fetches user by its identifier
+-- :name fetch_user_by_id :1
+-- :doc Fetches user by its identifier
 -- and that's almost that!
 SELECT user_id, email, name, picture FROM users WHERE user_id = $1
 
--- name: updates_user
--- doc: Juhu juhuu!
-SELECT user_id, email, name, picture FROM users WHERE user_id = $1
+-- :name updates_user :*
+-- :doc Juhu juhuu!
+SELECT user_id, email, name, picture FROM users
 "#;
 
     match parser().parse(input) {
