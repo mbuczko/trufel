@@ -1,12 +1,14 @@
--- :name fetch_user_by_id :?
+-- :name update_user_data :!
+-- :doc Updates core user's data (email, name, picture)
+UPDATE users SET email=$1, name=$2, picture=$3
+WHERE user_id=$4
+
+-- :name upsert_user :!
+-- :doc Creates new user or updates if one already exists
+INSERT INTO users(user_id, email, name, picture) VALUES($1, $2, $3, $4)
+ON CONFLICT (email) DO UPDATE
+SET user_id=EXCLUDED.user_id, name=EXCLUDED.name, picture=EXCLUDED.picture
+
+-- :name fetch_user_by_id :<> :?
 -- :doc Fetches user by its identifier
--- and that's almost that!
 SELECT user_id, email, name, picture FROM users WHERE user_id = $1
-
--- :name fetch_users :() :*
--- :doc Juhu juhuu!
-SELECT user_id, email, name, picture FROM users
-
--- :name delete_user :1
--- :doc Posyła juzera w pizdu
-DELETE FROM users;

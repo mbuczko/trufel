@@ -1,33 +1,35 @@
 use alcoholic_jwt::JWKS;
 use axum::{
     async_trait,
-    extract::{FromRequest, RequestParts},
-    http::StatusCode,
+    extract::{FromRef, FromRequestParts},
+    http::{StatusCode, request::Parts},
     Extension, TypedHeader,
 };
 use headers::{authorization::Bearer, Authorization};
-use serde_json::{json, Value};
+use sqlx::PgPool;
 
 use crate::{
     errors::AuthError,
     jwt::{self, Claims},
-    vault::Vault,
 };
 
+struct DatabaseConnection(sqlx::pool::PoolConnection<sqlx::Postgres>);
+
 #[async_trait]
-impl<B> FromRequest<B> for Claims
+impl<S> FromRequestParts<S> for Claims
 where
-    B: axum::body::HttpBody + Send,
+    S: Send + Sync,
 {
     type Rejection = AuthError;
 
-    async fn from_request(req: &mut RequestParts<B>) -> anyhow::Result<Self, Self::Rejection> {
-        let Extension((authority, jwks)) = Extension::<(String, JWKS)>::from_request(req)
+    async fn from_request_parts(parts: &mut Parts, state: &S) ->  Result<Self, Self::Rejection>  {
+        use axum::RequestPartsExt;
+        let Extension((authority, jwks)) = parts.extract::<Extension<(String, JWKS)>>()
             .await
             .map_err(|_| AuthError::JWKSFetchError)?;
 
         let TypedHeader(Authorization(bearer)) =
-            TypedHeader::<Authorization<Bearer>>::from_request(req)
+            TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                 .await
                 .map_err(|_| AuthError::InvalidToken)?;
 
@@ -37,21 +39,28 @@ where
 }
 
 #[async_trait]
-impl<B> FromRequest<B> for Vault
+impl<S> FromRequestParts<S> for DatabaseConnection
 where
-    B: axum::body::HttpBody + Send,
+    PgPool: FromRef<S>,
+    S: Send + Sync,
 {
-    type Rejection = (StatusCode, axum::Json<Value>);
+    type Rejection = (StatusCode, String);
 
-    async fn from_request(req: &mut RequestParts<B>) -> anyhow::Result<Self, Self::Rejection> {
-        let Extension(vault) = Extension::<Vault>::from_request(req).await.map_err(|err| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(json!({
-                    "error": format!("Cannot open db connections pool: {}", err)
-                })),
-            )
-        })?;
-        Ok(vault)
+    async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let pool = PgPool::from_ref(state);
+
+        let conn = pool.acquire().await.map_err(internal_error)?;
+
+        Ok(Self(conn))
     }
+}
+
+
+/// Utility function for mapping any error into a `500 Internal Server Error`
+/// response.
+fn internal_error<E>(err: E) -> (StatusCode, String)
+where
+    E: std::error::Error,
+{
+    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }
