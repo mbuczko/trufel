@@ -7,14 +7,14 @@ use std::{fs, path::Path};
 use chumsky::prelude::*;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use syn::{Data, DataStruct, Fields, Lit, Meta, MetaNameValue, Type};
+use syn::{Lit, Meta, MetaNameValue};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Arity {
     FetchAll,
     FetchOne,
     FetchOptional,
-    FetchStream,
+    FetchMany,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -44,7 +44,7 @@ impl Query {
                 Element::Meta(n, a) => {
                     name = n;
                     arity = a;
-                },
+                }
                 Element::Doc(d) => doc = Some(d),
                 Element::Sql(s) => sql = s,
             }
@@ -62,7 +62,7 @@ impl Query {
     pub fn arity_from_char(ch: char) -> Arity {
         match ch {
             '?' => Arity::FetchOptional,
-            '!' => Arity::FetchStream,
+            '!' => Arity::FetchMany,
             '1' => Arity::FetchOne,
             _ => Arity::FetchAll,
         }
@@ -129,6 +129,7 @@ fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
     let mut ts = TokenStream2::new();
     ts.extend(quote! {
         use futures_core::stream::BoxStream;
+        use futures_core::future::Future;
         use sqlx::{database::HasArguments, postgres::{PgPool, Postgres}, Arguments, IntoArguments, Type, Database};
 
         #[async_trait::async_trait]
@@ -145,18 +146,48 @@ fn generate_impl_fns(queries: Vec<Query>, ts: &mut TokenStream2) {
     for q in queries {
         let name = format_ident!("{}", q.name);
         let doc = q.doc.unwrap_or_default();
+        let sql = q.sql;
 
-        ts.extend(quote! {
-            #[doc = #doc]
-            async fn #name<'e, T> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> BoxStream<'e, Result<T, sqlx::Error>>
-            where
-                T: Send + Unpin + for<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> + 'e,
-            {
-               sqlx::query_as_with("SELECT * FROM users", params).fetch(conn)
+        let wer = quote! { T: Send + Unpin + for<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> + 'e };
 
+        ts.extend(match q.arity {
+            Arity::FetchMany => {
+                quote! {
+                    #[doc = #doc]
+                    async fn #name<'e, T> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> BoxStream<'e, Result<T, sqlx::Error>>
+                    where #wer {
+                        sqlx::query_as_with(#sql, params).fetch(conn)
+                    }
+                }
+            },
+            Arity::FetchOne => {
+                quote! {
+                    #[doc = #doc]
+                    async fn #name<'e, T> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> Result<T, sqlx::Error>
+                    where #wer {
+                        sqlx::query_as_with(#sql, params).fetch_one(conn).await
+                    }
+                }
+            },
+            Arity::FetchOptional => {
+                quote! {
+                    #[doc = #doc]
+                    async fn #name<'e, T> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> Result<Option<T>, sqlx::Error>
+                    where #wer {
+                        sqlx::query_as_with(#sql, params).fetch_optional(conn).await
+                    }
+                }
+            },
+            Arity::FetchAll => {
+                quote! {
+                    #[doc = #doc]
+                    async fn #name<'e, T> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> Result<Vec<T>, sqlx::Error>
+                    where #wer {
+                        sqlx::query_as_with(#sql, params).fetch_all(conn).await
+                    }
+                }
             }
-
-        })
+        });
     }
 }
 
@@ -183,7 +214,6 @@ fn parser() -> impl Parser<char, Vec<Query>, Error = Simple<char>> {
         .then(arity)
         .map(|(ident, a)| Element::Meta(ident, Query::arity_from_char(a)))
         .labelled("name");
-
     let doc = comment
         .ignore_then(just(':'))
         .ignore_then(just("doc").padded())
