@@ -3,7 +3,7 @@ use axum::{
     async_trait,
     extract::{FromRequest, RequestParts},
     http::StatusCode,
-    Extension, TypedHeader
+    Extension, TypedHeader,
 };
 use headers::{authorization::Bearer, Authorization};
 use serde_json::{json, Value};

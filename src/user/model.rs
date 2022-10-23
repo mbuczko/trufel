@@ -34,10 +34,7 @@ pub async fn find_by_claims(vault: &Vault, claims: &Claims) -> anyhow::Result<Op
     Ok(user)
 }
 
-#[tracing::instrument(
-    name = "Updating user's data in DB",
-    skip(vault, claims))
-]
+#[tracing::instrument(name = "Updating user's data in DB", skip(vault, claims))]
 pub async fn store(vault: &Vault, claims: Claims) -> anyhow::Result<User> {
     let mut conn = vault.pool.acquire().await?;
 

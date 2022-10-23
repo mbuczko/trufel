@@ -30,7 +30,8 @@ pub async fn init_vault(db: &str, app_semver: Version) -> anyhow::Result<Vault> 
         v if last_app_version < app_semver => {
             tracing::debug!(
                 "Upgrading DB schema from {} to latest version: {}",
-                v, app_semver
+                v,
+                app_semver
             );
             upgrade(&vault, last_script_version, app_semver).await?
         }

@@ -60,7 +60,7 @@ fn build_migration(base_version: String, app_semver: Version) -> Option<String> 
             Migration::new(
                 res.to_string(),
                 v[0].to_string(),
-                v[1].trim_end_matches(".sql").replace("_", " "),
+                v[1].trim_end_matches(".sql").replace('_', " "),
             )
         })
         .collect();
