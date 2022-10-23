@@ -10,6 +10,7 @@ onMount(async () => {
 		.init({ onLogin: 'check-sso' })
 		.then(keycloak.loadUserProfile)
 		.then((profile) => {
+            console.log('IDTOKEN', keycloak.idToken);
 			return fetch('http://localhost:3030/user', {
 				method: 'POST',
 				headers: {

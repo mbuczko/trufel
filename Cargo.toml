@@ -31,7 +31,7 @@ opentelemetry-otlp = {version = "0.11.0", features = ["reqwest-client", "reqwest
 tracing-log = "0.1.3"
 futures-core = "0.3.24"
 
-hugsql = {version = "0.1.0", path = "hugsql"}
+hugsqlx = {version = "0.1.0", path = "hugsqlx"}
 
 [dependencies.tower-http]
 version = "*"

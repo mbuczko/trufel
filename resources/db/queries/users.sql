@@ -3,7 +3,7 @@
 -- and that's almost that!
 SELECT user_id, email, name, picture FROM users WHERE user_id = $1
 
--- :name update_user :*
+-- :name fetch_users :() :*
 -- :doc Juhu juhuu!
 SELECT user_id, email, name, picture FROM users
 

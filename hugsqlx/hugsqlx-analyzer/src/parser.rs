@@ -1,22 +1,13 @@
-#[macro_use]
-extern crate quote;
-extern crate proc_macro;
-
-use std::{fs, path::Path};
-
 use chumsky::prelude::*;
-use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
-use syn::{Lit, Meta, MetaNameValue};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum Type {
+pub enum Type {
     Typed,
     Untyped,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum Arity {
+pub enum Arity {
     FetchAll,
     FetchOne,
     FetchOptional,
@@ -31,7 +22,7 @@ enum Element {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Query {
+pub struct Query {
     pub name: String,
     pub typ: Type,
     pub arity: Arity,
@@ -100,185 +91,7 @@ impl Query {
     }
 }
 
-/// Find all pairs of the `name = "value"` attribute from the derive input
-fn find_attribute_values(ast: &syn::DeriveInput, attr_name: &str) -> Vec<String> {
-    ast.attrs
-        .iter()
-        .filter(|value| value.path.is_ident(attr_name))
-        .filter_map(|attr| attr.parse_meta().ok())
-        .filter_map(|meta| match meta {
-            Meta::NameValue(MetaNameValue {
-                lit: Lit::Str(val), ..
-            }) => Some(val.value()),
-            _ => None,
-        })
-        .collect()
-}
-
-fn impl_hug_sql(ast: &syn::DeriveInput) -> TokenStream2 {
-    let mut queries_paths = find_attribute_values(ast, "queries");
-    if queries_paths.len() != 1 {
-        panic!(
-            "#[derive(HugSql)] must contain one attribute like this #[queries = \"db/queries/\"]"
-        );
-    }
-    let folder_path = queries_paths.remove(0);
-
-    let canonical_folder_path = Path::new(&folder_path)
-        .canonicalize()
-        .expect("folder path must resolve to an absolute path");
-    let canonical_folder_path = canonical_folder_path
-        .to_str()
-        .expect("absolute folder path must be valid unicode");
-
-    let files = walkdir::WalkDir::new(canonical_folder_path)
-        .follow_links(true)
-        .sort_by_file_name()
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .filter_map(move |e| {
-            Some(std::fs::canonicalize(e.path()).expect("Could not get canonical path"))
-        });
-
-    let mut fns = TokenStream2::new();
-
-    for f in files {
-        if let Ok(data) = fs::read_to_string(f) {
-            match parser().parse(data) {
-                Ok(ast) => {
-                    generate_impl_fns(ast, &mut fns);
-                }
-                Err(parse_errs) => parse_errs
-                    .into_iter()
-                    .for_each(|e| println!("Parse error: {}", e)),
-            }
-        }
-    }
-
-    let name = &ast.ident;
-    let mut ts = TokenStream2::new();
-    ts.extend(quote! {
-        use futures_core::stream::BoxStream;
-        use futures_core::future::Future;
-        use sqlx::{database::HasArguments, postgres::{PgPool, Postgres}, Arguments, IntoArguments, Type, Database};
-
-        #[async_trait::async_trait]
-        pub trait HugSql<'q> {
-            #fns
-        }
-        impl<'q> HugSql<'q> for #name {
-        }
-    });
-    ts
-}
-
-fn generate_impl_fns(queries: Vec<Query>, ts: &mut TokenStream2) {
-    for q in queries {
-        match q.typ {
-            Type::Typed => generate_typed_fn(q, ts),
-            Type::Untyped => generate_untyped_fn(q, ts),
-        }
-    }
-}
-
-fn generate_typed_fn(q: Query, ts: &mut TokenStream2) {
-    let name = format_ident!("{}", q.name);
-    let doc = q.doc.unwrap_or_default();
-    let sql = q.sql;
-
-    let bound = quote! { T: Send + Unpin + for<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> + 'e };
-
-    ts.extend(match q.arity {
-        Arity::FetchMany => {
-            quote! {
-                #[doc = #doc]
-                async fn #name<'e, T> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> BoxStream<'e, Result<T, sqlx::Error>>
-                where #bound {
-                    sqlx::query_as_with(#sql, params).fetch(conn)
-                }
-            }
-        },
-        Arity::FetchOne => {
-            quote! {
-                #[doc = #doc]
-                async fn #name<'e, T> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> Result<T, sqlx::Error>
-                where #bound {
-                    sqlx::query_as_with(#sql, params).fetch_one(conn).await
-                }
-            }
-        },
-        Arity::FetchOptional => {
-            quote! {
-                #[doc = #doc]
-                async fn #name<'e, T> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> Result<Option<T>, sqlx::Error>
-                where #bound {
-                    sqlx::query_as_with(#sql, params).fetch_optional(conn).await
-                }
-            }
-        },
-        Arity::FetchAll => {
-            quote! {
-                #[doc = #doc]
-                async fn #name<'e, T> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> Result<Vec<T>, sqlx::Error>
-                where #bound {
-                    sqlx::query_as_with(#sql, params).fetch_all(conn).await
-                }
-            }
-        }
-    });
-}
-
-fn generate_untyped_fn(q: Query, ts: &mut TokenStream2) {
-    let name = format_ident!("{}", q.name);
-    let doc = q.doc.unwrap_or_default();
-    let sql = q.sql;
-
-    ts.extend(match q.arity {
-        Arity::FetchMany => {
-            quote! {
-                #[doc = #doc]
-                async fn #name<'e> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> BoxStream<'e, Result<sqlx::postgres::PgRow, sqlx::Error>> {
-                    sqlx::query_with(#sql, params).fetch(conn)
-                }
-            }
-        },
-        Arity::FetchOne => {
-            quote! {
-                #[doc = #doc]
-                async fn #name<'e> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> Result<sqlx::postgres::PgRow, sqlx::Error> {
-                    sqlx::query_with(#sql, params).fetch_one(conn).await
-                }
-            }
-        },
-        Arity::FetchOptional => {
-            quote! {
-                #[doc = #doc]
-                async fn #name<'e> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> Result<Option<sqlx::postgres::PgRow>, sqlx::Error> {
-                    sqlx::query_with(#sql, params).fetch_optional(conn).await
-                }
-            }
-        },
-        Arity::FetchAll => {
-            quote! {
-                #[doc = #doc]
-                async fn #name<'e> (conn: &'e sqlx::Pool<Postgres>, params: PgArguments) -> Result<Vec<sqlx::postgres::PgRow>, sqlx::Error> {
-                    sqlx::query_with(#sql, params).fetch_all(conn).await
-                }
-            }
-        }
-    });
-}
-
-#[proc_macro_derive(HugSql, attributes(queries))]
-pub fn hug_sql(input: TokenStream) -> TokenStream {
-    let ast = syn::parse(input).unwrap();
-    let gen = impl_hug_sql(&ast);
-
-    gen.into()
-}
-
-fn parser() -> impl Parser<char, Vec<Query>, Error = Simple<char>> {
+fn query_parser() -> impl Parser<char, Vec<Query>, Error = Simple<char>> {
     let comment = just("--").padded();
 
     let arity = just(':')
@@ -332,6 +145,10 @@ fn parser() -> impl Parser<char, Vec<Query>, Error = Simple<char>> {
         .map(Query::from);
 
     query.repeated().then_ignore(end())
+}
+
+pub fn parse_queries(input: String) -> Result<Vec<Query>, Vec<Simple<char>>> {
+    query_parser().parse(input)
 }
 
 #[test]
@@ -440,6 +257,5 @@ DELETE FROM users
     assert_eq!(queries[3].doc, None);
     assert_eq!(queries[3].typ, Type::Untyped);
     assert_eq!(queries[3].arity, Arity::FetchOne);
-
 }
 

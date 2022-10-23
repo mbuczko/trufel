@@ -12,7 +12,7 @@ use axum::{
     routing::{get, post},
     Extension, Json, Router,
 };
-use hugsql::HugSql;
+use hugsqlx::HugSql;
 use jwt::Claims;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use semver::Version;
@@ -88,9 +88,8 @@ async fn user_test(_claims: Claims, vault: Vault) -> Result<String, StatusCode> 
     let mut params = PgArguments::default();
     params.add(1);
     params.add(str);
-    Db::fetch_user_by_id::<User>(&conn, params).await;
-    // Db::fetch_user_by_id<User>(params![1, str]).await;
-
+    // Db::fetch_user_by_id::<User>(&conn, params).await;
+    let rows = Db::fetch_users(&conn, params).await;
     Ok(String::from("Ok"))
 }
 
