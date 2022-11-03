@@ -3,11 +3,9 @@ name = "trufel"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 
-hugsqlx = {version = "0.1.0", path = "../rust/hugsqlx"}
+hugsqlx = {version = "0.1.0", features = ["postgres"],  git = "https://github.com/mbuczko/hugsqlx", branch = "develop"}
 
 axum = {version = "0.6.0-rc.2", features = ["headers"]}
 tokio = {version = "1.21.1", features = ["full"]}

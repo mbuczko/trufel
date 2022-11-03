@@ -7,9 +7,10 @@ mod user;
 mod vault;
 
 use axum::{
+    extract::State,
     http::{Method, StatusCode},
     routing::{get, post},
-    Extension, Json, Router, extract::State,
+    Extension, Json, Router,
 };
 use errors::AuthError;
 use jwt::Claims;
@@ -79,7 +80,10 @@ async fn user_update(claims: Claims, State(pool): State<PgPool>) -> Result<Json<
     Ok(Json(user))
 }
 
-async fn user_identity(claims: Claims, State(pool): State<PgPool>) -> Result<Json<User>, StatusCode> {
+async fn user_identity(
+    claims: Claims,
+    State(pool): State<PgPool>,
+) -> Result<Json<User>, StatusCode> {
     match user::find_by_claims(&pool, &claims).await {
         Ok(some_user) => {
             if let Some(user) = some_user {

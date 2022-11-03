@@ -2,7 +2,7 @@ use alcoholic_jwt::JWKS;
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
-    http::{StatusCode, request::Parts},
+    http::{request::Parts, StatusCode},
     Extension, TypedHeader,
 };
 use headers::{authorization::Bearer, Authorization};
@@ -22,9 +22,10 @@ where
 {
     type Rejection = AuthError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) ->  Result<Self, Self::Rejection>  {
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         use axum::RequestPartsExt;
-        let Extension((authority, jwks)) = parts.extract::<Extension<(String, JWKS)>>()
+        let Extension((authority, jwks)) = parts
+            .extract::<Extension<(String, JWKS)>>()
             .await
             .map_err(|_| AuthError::JWKSFetchError)?;
 
@@ -54,7 +55,6 @@ where
         Ok(Self(conn))
     }
 }
-
 
 /// Utility function for mapping any error into a `500 Internal Server Error`
 /// response.

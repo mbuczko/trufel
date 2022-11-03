@@ -4,10 +4,14 @@ use crate::errors::DbError;
 use crate::jwt::Claims;
 
 use anyhow::bail;
-use hugsqlx::{params, HugSql};
+use hugsqlx::{params, HugSqlx};
 use serde::Serialize;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
+
+#[derive(HugSqlx)]
+#[queries = "resources/db/queries/users.sql"]
+struct DbUsers {}
 
 #[derive(Serialize, Debug, sqlx::FromRow)]
 pub struct User {
@@ -22,16 +26,12 @@ pub struct UserProfile {
     pub login: String,
 }
 
-#[derive(HugSql)]
-#[queries = "resources/db/queries/users.sql"]
-struct Users {}
-
 pub async fn find_by_claims(
     pool: &Pool<Postgres>,
     claims: &Claims,
 ) -> anyhow::Result<Option<User>> {
     let uuid = Uuid::from_str(&claims.sub)?;
-    let user = Users::fetch_user_by_id::<User>(pool, params![uuid]).await?;
+    let user = DbUsers::fetch_user_by_id::<_,User>(pool, params![uuid]).await?;
 
     Ok(user)
 }
@@ -57,9 +57,9 @@ pub async fn store(pool: &Pool<Postgres>, claims: Claims) -> anyhow::Result<User
     //    record needs to be inserted.
 
     if find_by_claims(pool, &claims).await?.is_some() {
-        Users::update_user_data(pool, params![email, &claims.name, &claims.picture, uuid]).await?;
+        DbUsers::update_user_data(pool, params![email, &claims.name, &claims.picture, uuid]).await?;
     } else {
-        Users::upsert_user(pool, params![uuid, email, &claims.name, &claims.picture]).await?;
+        DbUsers::upsert_user(pool, params![uuid, email, &claims.name, &claims.picture]).await?;
     }
 
     match find_by_claims(pool, &claims).await {
