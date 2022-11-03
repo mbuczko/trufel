@@ -55,12 +55,12 @@ impl Vault {
 
 fn build_migration(base_version: String, app_semver: Version) -> Option<String> {
     let mut migrations: Vec<Migration> = Asset::iter()
-        .map(|file| {
-            let v: Vec<&str> = file.split("__").collect();
+        .map(|res| {
+            let v: Vec<&str> = res.split("__").collect();
             Migration::new(
-                file.to_string(),
+                res.to_string(),
                 v[0].to_string(),
-                v[1].trim_end_matches(".sql").replace("_", " "),
+                v[1].trim_end_matches(".sql").replace('_', " "),
             )
         })
         .collect();

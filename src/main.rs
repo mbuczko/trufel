@@ -2,19 +2,21 @@ mod db;
 mod errors;
 mod extractors;
 mod jwt;
-mod user;
 mod telemetry;
+mod user;
 mod vault;
 
 use axum::{
-    handler::Handler,
+    extract::State,
     http::{Method, StatusCode},
     routing::{get, post},
     Extension, Json, Router,
 };
+use errors::AuthError;
 use jwt::Claims;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use semver::Version;
+use sqlx::PgPool;
 use std::{net::SocketAddr, process::exit};
 use tower_http::{
     compression::CompressionLayer,
@@ -23,7 +25,6 @@ use tower_http::{
 };
 use tracing_log::LogTracer;
 use user::User;
-use vault::Vault;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -44,10 +45,10 @@ async fn main() -> anyhow::Result<()> {
 
     telemetry::init_telemetry()?;
 
-    let app = Router::new()
-        .route("/@me", get(user_identity.layer(CompressionLayer::new())))
+    let app = Router::with_state(vault.pool)
+        .route("/@me", get(user_identity))
         .route("/user", post(user_update))
-        .layer(Extension(vault))
+        .layer(CompressionLayer::new())
         .layer(Extension((authority, jwks)))
         .layer(
             CorsLayer::new()
@@ -70,17 +71,20 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn user_update(claims: Claims, vault: Vault) -> Result<Json<User>, StatusCode> {
+async fn user_update(claims: Claims, State(pool): State<PgPool>) -> Result<Json<User>, AuthError> {
     tracing::info!("Updating user's profile...");
-    let user = user::store(&vault, claims).await.map_err(|e| {
+    let user = user::store(&pool, claims).await.map_err(|e| {
         tracing::error!("Could not store user's profile: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        AuthError::JWKSFetchError
     })?;
     Ok(Json(user))
 }
 
-async fn user_identity(claims: Claims, vault: Vault) -> Result<Json<User>, StatusCode> {
-    match user::find_by_claims(&vault, &claims).await {
+async fn user_identity(
+    claims: Claims,
+    State(pool): State<PgPool>,
+) -> Result<Json<User>, StatusCode> {
+    match user::find_by_claims(&pool, &claims).await {
         Ok(some_user) => {
             if let Some(user) = some_user {
                 Ok(Json(user))
@@ -94,4 +98,3 @@ async fn user_identity(claims: Claims, vault: Vault) -> Result<Json<User>, Statu
         }
     }
 }
-

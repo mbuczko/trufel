@@ -1,14 +1,14 @@
 use axum::body::{Body, BoxBody};
-use axum::extract::{OriginalUri, MatchedPath};
-use axum::http::{Request, Response};
+use axum::extract::{MatchedPath, OriginalUri};
 use axum::http::uri::Scheme;
+use axum::http::{Request, Response};
 use opentelemetry::sdk::{trace, Resource};
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
-use reqwest::{Method, header};
-use tracing::{debug_span, Span, field};
+use reqwest::{header, Method};
 use std::collections::HashMap;
 use std::time::Duration;
+use tracing::{debug_span, field, Span};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 
@@ -93,7 +93,6 @@ pub fn make_span(request: &Request<Body>) -> Span {
         http.user_agent = user_agent,
         http.status_code = tracing::field::Empty,
         otel.kind = "server",
-
     )
 }
 
