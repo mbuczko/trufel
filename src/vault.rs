@@ -19,7 +19,7 @@ impl Vault {
 }
 
 pub async fn init_vault(db: &str, app_semver: Version) -> anyhow::Result<Vault> {
-    tracing::debug!("Opening database ({})", db);
+    tracing::debug!(db = db, "Opening database");
 
     let vault = Vault::new(db).await;
     let (last_script_version, last_app_version) = match vault.version().await {

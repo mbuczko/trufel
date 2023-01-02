@@ -26,6 +26,7 @@
 	"type": "module",
 	"dependencies": {
 		"keycloak-js": "^19.0.2",
+		"pusher-js": "^8.0.0",
 		"svelte-material-icons": "^2.0.4"
 	}
 }

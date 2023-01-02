@@ -2,6 +2,7 @@ mod db;
 mod errors;
 mod extractors;
 mod jwt;
+mod pusher;
 mod telemetry;
 mod user;
 mod vault;
@@ -10,7 +11,7 @@ use axum::{
     extract::State,
     http::{Method, StatusCode},
     routing::{get, post},
-    Extension, Json, Router,
+    Extension, Json, Router, Form,
 };
 use errors::AuthError;
 use jwt::Claims;
@@ -23,14 +24,13 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
-use tracing_log::LogTracer;
 use user::User;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    LogTracer::init().expect("Failed to set logger");
+    telemetry::init_telemetry()?;
 
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
     let jwks = jwt::fetch_jwks(&authority).await?;
@@ -43,11 +43,10 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    telemetry::init_telemetry()?;
-
     let app = Router::with_state(vault.pool)
         .route("/@me", get(user_identity))
         .route("/user", post(user_update))
+        .route("/pusher/auth", post(pusher_auth))
         .layer(CompressionLayer::new())
         .layer(Extension((authority, jwks)))
         .layer(
@@ -94,6 +93,28 @@ async fn user_identity(
         }
         Err(e) => {
             tracing::error!("Could not fetch user's profile: {}", e);
+            Err(StatusCode::BAD_REQUEST)
+        }
+    }
+}
+
+//#[axum_macros::debug_handler]
+async fn pusher_auth(
+    claims: Claims,
+    State(pool): State<PgPool>,
+    Form(payload): Form<pusher::AuthRequestPayload>,
+) -> Result<Json<pusher::PusherAuth>, StatusCode> {
+    tracing::info!("Authenticating pusher connection...");
+    match pusher::auth_by_claims(payload.socket_id, payload.channel_name, &pool, &claims).await {
+        Ok(some_auth) => {
+            if let Some(auth) = some_auth {
+                Ok(Json(auth))
+            } else {
+                Err(StatusCode::NOT_FOUND)
+            }
+        }
+        Err(e) => {
+            tracing::error!("Could not authenticate pusher request: {}", e);
             Err(StatusCode::BAD_REQUEST)
         }
     }

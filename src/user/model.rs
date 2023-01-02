@@ -31,12 +31,12 @@ pub async fn find_by_claims(
     claims: &Claims,
 ) -> anyhow::Result<Option<User>> {
     let uuid = Uuid::from_str(&claims.sub)?;
-    let user = DbUsers::fetch_user_by_id::<_,User>(pool, params![uuid]).await?;
+    let user = DbUsers::fetch_user_by_id::<_,User>(pool, params!(uuid)).await?;
 
     Ok(user)
 }
 
-#[tracing::instrument(name = "Updating user's data in DB", skip(pool, claims))]
+#[tracing::instrument(skip(pool, claims))]
 pub async fn store(pool: &Pool<Postgres>, claims: Claims) -> anyhow::Result<User> {
     assert!(claims.email.is_some());
     assert!(claims.name.is_some());
