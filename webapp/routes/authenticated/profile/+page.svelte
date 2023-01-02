@@ -14,7 +14,6 @@ onMount(() => {
 		.then((profile) => {
 			firstName = profile.firstName;
 			lastName = profile.lastName;
-            console.log(profile);
 		});
 });
 
@@ -27,23 +26,30 @@ function initPusher() {
 		enabledTransports: ['ws', 'wss'],
 		channelAuthorization: {
 			endpoint: 'http://localhost:3030/pusher/auth',
-            transport: 'ajax',
+			transport: 'ajax',
 			params: {},
 			headers: {
-                'Authorization': 'Bearer ' + getAuthClient().token,
-                'Accept': 'application/json'
-            }
+				Authorization: 'Bearer ' + getAuthClient().token,
+				Accept: 'application/json'
+			}
 		}
 	});
-	const channel = client.subscribe('private-chat-room').bind('message', (message) => {
-		console.log(`${message.sender} says: ${message.content}`);
+	/* const channel = client.subscribe('private-chat-room').bind('client-message', (message) => {
+	   console.log(`${message.sender} says: ${message.content}`);
+	   }); */
+	const channel = client.subscribe('private-chat-room').bind_global((eventName, data) => {
+        console.log(eventName, data);
+    });
+	client.connection.bind('connected', function (e) {
+        console.info('Connected to channel')
+        channel.trigger('client-message', { message: 'Hello, world!' });
+
 	});
-	client.connection.bind('error', function (err) {
-		if (err.error.data.code === 4004) {
-			log('Over limit!');
+	client.connection.bind('error', function (e) {
+		if (e.error && e.error.data && e.error.data.code === 4004) {
+		    console.error('Over limit!', e);
 		}
 	});
-    channel.trigger('client-my-event', {message: 'Hello, world!'})
 }
 </script>
 

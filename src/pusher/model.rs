@@ -3,22 +3,20 @@ use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use sqlx::{Pool, Postgres};
 use subtle_encoding::hex;
-use uuid::Uuid;
 
 use crate::{jwt::Claims, user};
 
 type HmacSha256 = Hmac<Sha256>;
 
 #[derive(Serialize, Debug, sqlx::FromRow)]
-pub struct PusherUserInfo {
+pub struct PusherUserData {
     pub name: String,
 }
 
-#[derive(Serialize, Debug, sqlx::FromRow)]
+#[derive(Serialize, Debug)]
 pub struct PusherAuth {
-    pub id: Uuid,
     pub auth: String,
-    pub user_info: PusherUserInfo,
+    pub user_data: PusherUserData,
 }
 
 #[derive(Deserialize, Debug)]
@@ -45,9 +43,8 @@ pub async fn auth_by_claims(
 
         let result = hex::encode(mac.finalize().into_bytes());
         return Ok(Some(PusherAuth {
-            id: user.user_id,
             auth: format!("{key}:{}", String::from_utf8(result).unwrap()),
-            user_info: PusherUserInfo { name: user.name },
+            user_data: PusherUserData { name: user.name },
         }));
     }
     Ok(None)
