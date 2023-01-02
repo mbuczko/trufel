@@ -19,10 +19,10 @@ onMount(() => {
 
 function initPusher() {
 	const client = new Pusher('8b48d3be-85f9-4919-bce6-dbf88472d30f', {
-		wsHost: 'localhost',
+		wsHost: 'pusher.rodzinks.pl',
 		wsPort: 6001,
 		cluster: '',
-		forceTLS: false,
+		forceTLS: true,
 		enabledTransports: ['ws', 'wss'],
 		channelAuthorization: {
 			endpoint: 'http://localhost:3030/pusher/auth',
@@ -42,8 +42,6 @@ function initPusher() {
     });
 	client.connection.bind('connected', function (e) {
         console.info('Connected to channel')
-        channel.trigger('client-message', { message: 'Hello, world!' });
-
 	});
 	client.connection.bind('error', function (e) {
 		if (e.error && e.error.data && e.error.data.code === 4004) {
