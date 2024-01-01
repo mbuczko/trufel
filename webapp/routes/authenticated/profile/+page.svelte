@@ -20,7 +20,6 @@ onMount(() => {
 function initPusher() {
 	const client = new Pusher('8b48d3be-85f9-4919-bce6-dbf88472d30f', {
 		wsHost: 'pusher.rodzinks.pl',
-		wsPort: 6001,
 		cluster: '',
 		forceTLS: true,
 		enabledTransports: ['ws', 'wss'],

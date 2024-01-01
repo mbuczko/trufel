@@ -7,13 +7,15 @@ mod telemetry;
 mod user;
 mod vault;
 
+use ::pusher::PusherBuilder;
 use axum::{
     extract::State,
     http::{Method, StatusCode},
     routing::{get, post},
-    Extension, Json, Router, Form,
+    Extension, Form, Json, Router,
 };
 use errors::AuthError;
+use futures::TryFutureExt;
 use jwt::Claims;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use semver::Version;
@@ -47,6 +49,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/@me", get(user_identity))
         .route("/user", post(user_update))
         .route("/pusher/auth", post(pusher_auth))
+        .route("/pusher/test", get(pusher_test))
         .layer(CompressionLayer::new())
         .layer(Extension((authority, jwks)))
         .layer(
@@ -118,4 +121,23 @@ async fn pusher_auth(
             Err(StatusCode::BAD_REQUEST)
         }
     }
+}
+
+async fn pusher_test() -> Result<(), StatusCode> {
+    let key = std::env::var("PUSHER_KEY").unwrap();
+    let secret = std::env::var("PUSHER_SECRET").unwrap();
+
+    let pusher = PusherBuilder::new("trufel", &key, &secret)
+        .host("pusher.rodzinks.pl")
+        .finalize();
+
+    pusher
+        .trigger("private-chat-room", "message", "dupa")
+        .map_err(|err| {
+            tracing::error!(err = err, "Cannot trigger a message");
+            StatusCode::BAD_REQUEST
+        })
+        .await?;
+
+    Ok(())
 }

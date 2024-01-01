@@ -2,46 +2,43 @@ use axum::body::{Body, BoxBody};
 use axum::extract::{MatchedPath, OriginalUri};
 use axum::http::uri::Scheme;
 use axum::http::{Request, Response};
+use opentelemetry::sdk::propagation::TraceContextPropagator;
 use opentelemetry::sdk::{trace, Resource};
 use opentelemetry::KeyValue;
-use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_otlp::{WithExportConfig, Protocol};
 use reqwest::{header, Method};
-use std::collections::HashMap;
 use std::time::Duration;
 use tracing::{debug_span, field, Span};
-use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
+use tracing_log::LogTracer;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
+use uuid::Uuid;
 
 pub fn init_telemetry() -> anyhow::Result<()> {
-    //let stdout_tracer = stdout::new_pipeline().install_simple();
-    let aspecto_key = std::env::var("ASPECTO_API_KEY").unwrap();
+    LogTracer::init().expect("Failed to set logger");
+    opentelemetry::global::set_text_map_propagator(TraceContextPropagator::new());
+
     let exporter = opentelemetry_otlp::new_exporter()
-        .http()
-        .with_endpoint("https://otelcol.aspecto.io/v1/traces")
-        .with_headers(HashMap::from([("Authorization".into(), aspecto_key)]));
+        .tonic()
+        .with_endpoint("http://localhost:4317")
+        .with_timeout(Duration::from_secs(3));
 
-    let aspecto_tracer = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(exporter)
-        .with_trace_config(
-            trace::config().with_resource(Resource::new(vec![KeyValue::new(
-                "service.name",
-                std::env::var("SERVICE_NAME").unwrap(),
-            )])),
-        )
-        .install_batch(opentelemetry::runtime::Tokio)
-        .expect("Error - Failed to create tracer.");
-
-    let formatting_layer =
-        BunyanFormattingLayer::new(std::env::var("SERVICE_NAME").unwrap(), std::io::stdout);
+    // let tempo_tracer = opentelemetry_otlp::new_pipeline()
+    //     .tracing()
+    //     .with_exporter(exporter)
+    //     .with_trace_config(trace::config().with_resource(Resource::new(vec![
+    //         KeyValue::new("service.name", std::env::var("SERVICE_NAME").unwrap()),
+    //         KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
+    //     ])))
+    //     .install_batch(opentelemetry::runtime::Tokio)
+    //     .expect("Error - Failed to create tracer.");
 
     let subscriber = Registry::default()
         .with(tracing_subscriber::EnvFilter::new(
             std::env::var("RUST_LOG").unwrap_or_else(|_| "trufel=debug,tower_http=debug".into()),
         ))
-        .with(tracing_opentelemetry::layer().with_tracer(aspecto_tracer))
-        .with(JsonStorageLayer)
-        .with(formatting_layer);
+        // .with(tracing_opentelemetry::layer().with_tracer(tempo_tracer))
+        .with(tracing_subscriber::fmt::layer());
+
 
     tracing::subscriber::set_global_default(subscriber)?;
     Ok(())
@@ -81,10 +78,10 @@ pub fn make_span(request: &Request<Body>) -> Span {
         .unwrap_or_else(|| uri.path().to_owned());
 
     debug_span!(
-        "http-request",
+        "HTTP",
         request_duration = tracing::field::Empty,
         status_code = tracing::field::Empty,
-        traceID = tracing::field::Empty,
+        trace_id = %Uuid::new_v4().to_string().replace('-',""),
         http.host = host,
         http.scheme = scheme,
         http.method = http_method,
@@ -110,8 +107,6 @@ pub fn emit_response_trace_with_id(response: &Response<BoxBody>, latency: Durati
     span.record("request_duration", &field::display(latency.as_micros()));
     span.record("status_code", status_code);
     span.record("http.status_code", status_code);
-
-    tracing::debug!("response generated");
 }
 
 fn http_method(method: &Method) -> String {
