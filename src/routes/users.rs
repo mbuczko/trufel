@@ -1,13 +1,14 @@
-use std::str::FromStr;
-
-use crate::errors::DbError;
-use crate::jwt::Claims;
-
 use anyhow::bail;
+use axum::{extract::State, http::StatusCode, Json};
 use hugsqlx::{params, HugSqlx};
 use serde::Serialize;
-use sqlx::{Pool, Sqlite};
+use sqlx::{Pool, Sqlite, SqlitePool};
+use std::str::FromStr;
 use uuid::Uuid;
+
+use crate::errors::AuthError;
+use crate::errors::DbError;
+use crate::jwt::Claims;
 
 #[derive(HugSqlx)]
 #[queries = "resources/db/queries/users.sql"]
@@ -26,12 +27,9 @@ pub struct UserProfile {
     pub login: String,
 }
 
-pub async fn find_by_claims(
-    pool: &Pool<Sqlite>,
-    claims: &Claims,
-) -> anyhow::Result<Option<User>> {
+pub async fn find_by_claims(pool: &Pool<Sqlite>, claims: &Claims) -> anyhow::Result<Option<User>> {
     let uuid = Uuid::from_str(&claims.sub)?;
-    let user = DbUsers::fetch_user_by_id::<_,User>(pool, params!(uuid)).await?;
+    let user = DbUsers::fetch_user_by_id::<_, User>(pool, params!(uuid)).await?;
     Ok(user)
 }
 
@@ -56,7 +54,8 @@ pub async fn store(pool: &Pool<Sqlite>, claims: Claims) -> anyhow::Result<User> 
     //    record needs to be inserted.
 
     if find_by_claims(pool, &claims).await?.is_some() {
-        DbUsers::update_user_data(pool, params![email, &claims.name, &claims.picture, uuid]).await?;
+        DbUsers::update_user_data(pool, params![email, &claims.name, &claims.picture, uuid])
+            .await?;
     } else {
         DbUsers::upsert_user(pool, params![uuid, email, &claims.name, &claims.picture]).await?;
     }
@@ -66,6 +65,41 @@ pub async fn store(pool: &Pool<Sqlite>, claims: Claims) -> anyhow::Result<User> 
         Err(e) => {
             tracing::error!("User stored but not found. This should not happen: {}", e);
             bail!(DbError::UserNotFound)
+        }
+    }
+}
+
+pub async fn user_update(
+    claims: Claims,
+    State(pool): State<SqlitePool>,
+) -> Result<Json<User>, AuthError> {
+    tracing::info!("Updating user's profile...");
+
+    let user = store(&pool, claims).await.map_err(|e| {
+        tracing::error!("Could not store user's profile: {}", e);
+        AuthError::JWKSFetchError
+    })?;
+
+    Ok(Json(user))
+}
+
+pub async fn user_identity(
+    claims: Claims,
+    State(pool): State<SqlitePool>,
+) -> Result<Json<User>, StatusCode> {
+    tracing::info!("Fetching user's profile");
+
+    match find_by_claims(&pool, &claims).await {
+        Ok(some_user) => {
+            if let Some(user) = some_user {
+                Ok(Json(user))
+            } else {
+                Err(StatusCode::NOT_FOUND)
+            }
+        }
+        Err(e) => {
+            tracing::error!("Could not fetch user's profile: {}", e);
+            Err(StatusCode::BAD_REQUEST)
         }
     }
 }

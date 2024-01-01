@@ -2,31 +2,25 @@ mod db;
 mod errors;
 mod extractors;
 mod jwt;
-mod pusher;
-mod telemetry;
-mod user;
+mod routes;
 mod sentry;
+mod telemetry;
 
-use ::pusher::PusherBuilder;
 use axum::{
-    extract::State,
-    http::{Method, StatusCode, header},
+    http::{header, Method},
     routing::{get, post},
-    Extension, Form, Json, Router,
+    Extension, Router,
 };
-use errors::AuthError;
-use futures::TryFutureExt;
-use jwt::Claims;
 use semver::Version;
-use tracing_log::LogTracer;
-use sqlx::SqlitePool;
 use tower_http::{
     compression::CompressionLayer,
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
-use user::User;
+use tracing_log::LogTracer;
 
+use routes::pusher;
+use routes::users;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -45,10 +39,10 @@ async fn main() -> anyhow::Result<()> {
     db::migrate(&pool, Version::parse(env!("CARGO_PKG_VERSION")).unwrap()).await?;
 
     let app = Router::new()
-        .route("/@me", get(user_identity))
-        .route("/user", post(user_update))
-        .route("/pusher/auth", post(pusher_auth))
-        .route("/pusher/test", get(pusher_test))
+        .route("/@me", get(users::user_identity))
+        .route("/user", post(users::user_update))
+        .route("/pusher/auth", post(pusher::pusher_auth))
+        .route("/pusher/test", get(pusher::pusher_test))
         .with_state(pool)
         .layer(CompressionLayer::new())
         .layer(Extension((authority, jwks)))
@@ -70,75 +64,6 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
-
-    Ok(())
-}
-
-async fn user_update(claims: Claims, State(pool): State<SqlitePool>) -> Result<Json<User>, AuthError> {
-    tracing::info!("Updating user's profile...");
-    let user = user::store(&pool, claims).await.map_err(|e| {
-        tracing::error!("Could not store user's profile: {}", e);
-        AuthError::JWKSFetchError
-    })?;
-    Ok(Json(user))
-}
-
-async fn user_identity(
-    claims: Claims,
-    State(pool): State<SqlitePool>,
-) -> Result<Json<User>, StatusCode> {
-    match user::find_by_claims(&pool, &claims).await {
-        Ok(some_user) => {
-            if let Some(user) = some_user {
-                Ok(Json(user))
-            } else {
-                Err(StatusCode::NOT_FOUND)
-            }
-        }
-        Err(e) => {
-            tracing::error!("Could not fetch user's profile: {}", e);
-            Err(StatusCode::BAD_REQUEST)
-        }
-    }
-}
-
-//#[axum_macros::debug_handler]
-async fn pusher_auth(
-    claims: Claims,
-    State(pool): State<SqlitePool>,
-    Form(payload): Form<pusher::AuthRequestPayload>,
-) -> Result<Json<pusher::PusherAuth>, StatusCode> {
-    tracing::info!("Authenticating pusher connection...");
-    match pusher::auth_by_claims(payload.socket_id, payload.channel_name, &pool, &claims).await {
-        Ok(some_auth) => {
-            if let Some(auth) = some_auth {
-                Ok(Json(auth))
-            } else {
-                Err(StatusCode::NOT_FOUND)
-            }
-        }
-        Err(e) => {
-            tracing::error!("Could not authenticate pusher request: {}", e);
-            Err(StatusCode::BAD_REQUEST)
-        }
-    }
-}
-
-async fn pusher_test() -> Result<(), StatusCode> {
-    let key = std::env::var("PUSHER_KEY").unwrap();
-    let secret = std::env::var("PUSHER_SECRET").unwrap();
-
-    let pusher = PusherBuilder::new("trufel", &key, &secret)
-        .host("pusher.rodzinks.pl")
-        .finalize();
-
-    pusher
-        .trigger("private-chat-room", "message", "dupa")
-        .map_err(|err| {
-            tracing::error!(err = err, "Cannot trigger a message");
-            StatusCode::BAD_REQUEST
-        })
-        .await?;
 
     Ok(())
 }
