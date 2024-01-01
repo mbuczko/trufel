@@ -6,7 +6,7 @@ use crate::jwt::Claims;
 use anyhow::bail;
 use hugsqlx::{params, HugSqlx};
 use serde::Serialize;
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Sqlite};
 use uuid::Uuid;
 
 #[derive(HugSqlx)]
@@ -27,17 +27,16 @@ pub struct UserProfile {
 }
 
 pub async fn find_by_claims(
-    pool: &Pool<Postgres>,
+    pool: &Pool<Sqlite>,
     claims: &Claims,
 ) -> anyhow::Result<Option<User>> {
     let uuid = Uuid::from_str(&claims.sub)?;
     let user = DbUsers::fetch_user_by_id::<_,User>(pool, params!(uuid)).await?;
-
     Ok(user)
 }
 
 #[tracing::instrument(skip(pool, claims))]
-pub async fn store(pool: &Pool<Postgres>, claims: Claims) -> anyhow::Result<User> {
+pub async fn store(pool: &Pool<Sqlite>, claims: Claims) -> anyhow::Result<User> {
     assert!(claims.email.is_some());
     assert!(claims.name.is_some());
 

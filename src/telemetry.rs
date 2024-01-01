@@ -1,26 +1,25 @@
-use axum::body::{Body, BoxBody};
+use axum::body::Body;
 use axum::extract::{MatchedPath, OriginalUri};
 use axum::http::uri::Scheme;
-use axum::http::{Request, Response};
-use opentelemetry::sdk::propagation::TraceContextPropagator;
-use opentelemetry::sdk::{trace, Resource};
-use opentelemetry::KeyValue;
-use opentelemetry_otlp::{WithExportConfig, Protocol};
-use reqwest::{header, Method};
+use axum::http::{Request, Response, self, header, Method};
+use opentelemetry_sdk::propagation::TraceContextPropagator;
+use opentelemetry_sdk::trace::{RandomIdGenerator, IdGenerator};
+use opentelemetry::trace::{TraceId, SpanContext, SpanId, TraceContextExt};
+use opentelemetry_otlp::WithExportConfig;
+use percent_encoding::percent_decode_str;
+use std::borrow::{Cow, Borrow};
 use std::time::Duration;
-use tracing::{debug_span, field, Span};
-use tracing_log::LogTracer;
+use tracing::{debug_span, field};
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 use uuid::Uuid;
 
 pub fn init_telemetry() -> anyhow::Result<()> {
-    LogTracer::init().expect("Failed to set logger");
     opentelemetry::global::set_text_map_propagator(TraceContextPropagator::new());
 
-    let exporter = opentelemetry_otlp::new_exporter()
-        .tonic()
-        .with_endpoint("http://localhost:4317")
-        .with_timeout(Duration::from_secs(3));
+    // let exporter = opentelemetry_otlp::new_exporter()
+    //     .tonic()
+    //     .with_endpoint("http://localhost:4317")
+    //     .with_timeout(Duration::from_secs(3));
 
     // let tempo_tracer = opentelemetry_otlp::new_pipeline()
     //     .tracing()
@@ -39,14 +38,13 @@ pub fn init_telemetry() -> anyhow::Result<()> {
         // .with(tracing_opentelemetry::layer().with_tracer(tempo_tracer))
         .with(tracing_subscriber::fmt::layer());
 
-
     tracing::subscriber::set_global_default(subscriber)?;
     Ok(())
 }
 
 /// Internal helper for [`tower_http::trace::TraceLayer`] to create
 /// [`tracing::Span`]s around a request.
-pub fn make_span(request: &Request<Body>) -> Span {
+pub fn make_span(request: &Request<Body>) -> tracing::Span {
     let http_route = if let Some(matched_path) = request.extensions().get::<MatchedPath>() {
         matched_path.as_str().to_owned()
     } else if let Some(uri) = request.extensions().get::<OriginalUri>() {
@@ -72,6 +70,7 @@ pub fn make_span(request: &Request<Body>) -> Span {
     } else {
         request.uri().clone()
     };
+
     let http_target = uri
         .path_and_query()
         .map(|path_and_query| path_and_query.to_string())
@@ -93,20 +92,24 @@ pub fn make_span(request: &Request<Body>) -> Span {
     )
 }
 
-/// Internal helper for [`tower_http::trace::TraceLayer`] to emit a structured [`tracing::Span`] with specific recorded fields.
-///
-/// Uses a `Loki`-friendly `traceID` that can correlate to `Tempo` distributed traces.
-pub fn emit_response_trace_with_id(response: &Response<BoxBody>, latency: Duration, span: &Span) {
-    // https://github.com/kube-rs/controller-rs/blob/b99ad0bfbf4ae75f03323bff2796572d4257bd96/src/telemetry.rs#L4-L8
-    use opentelemetry::trace::TraceContextExt;
-    use tracing_opentelemetry::OpenTelemetrySpanExt;
-    let trace_id = span.context().span().span_context().trace_id().to_string();
-    let status_code = &field::display(response.status().as_u16());
+pub fn emit_response_trace_with_id(response: &Response<Body>, latency: Duration, span: &tracing::Span) {
+    // use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-    span.record("traceID", &field::display(&trace_id));
+    let http_status = response.status().as_u16();
+    let status_code = &field::display(http_status);
+
+    // let context = opentelemetry::Context::current();
+    // let context = tracing::Span::current().context();
+    // let span_context = context.span().span_context();
+    // let trace_id = span_context
+    //     .is_valid()
+    //     .then(|| span_context.trace_id().to_string());
+
+    // span.record("traceID", &field::display(&trace_id));
     span.record("request_duration", &field::display(latency.as_micros()));
     span.record("status_code", status_code);
     span.record("http.status_code", status_code);
+    span.record("otel.status_code", if http_status != 500 { "OK" } else { "ERROR" });
 }
 
 fn http_method(method: &Method) -> String {
@@ -132,4 +135,80 @@ fn http_scheme(scheme: &Scheme) -> String {
     } else {
         scheme.to_string()
     }
+}
+
+// If remote request has no span data the propagator defaults to an unsampled context
+fn extract_remote_context(headers: &http::HeaderMap) -> opentelemetry::Context {
+    struct HeaderExtractor<'a>(&'a http::HeaderMap);
+
+    impl<'a> opentelemetry::propagation::Extractor for HeaderExtractor<'a> {
+        fn get(&self, key: &str) -> Option<&str> {
+            self.0.get(key).and_then(|value| value.to_str().ok())
+        }
+
+        fn keys(&self) -> Vec<&str> {
+            self.0.keys().map(|value| value.as_str()).collect()
+        }
+    }
+    let extractor = HeaderExtractor(headers);
+    opentelemetry::global::get_text_map_propagator(|propagator| propagator.extract(&extractor))
+}
+
+fn create_context_with_trace(
+    remote_context: opentelemetry::Context,
+    sentry_trace_id: Option<Cow<str>>,
+) -> (opentelemetry::Context, TraceId) {
+    if !remote_context.span().span_context().is_valid() {
+        // create a fake remote context but with a fresh new trace_id
+        let trace_id = sentry_trace_id
+            .map(|id| TraceId::from_hex(id.borrow()))
+            .unwrap_or_else(|| Ok(RandomIdGenerator::default().new_trace_id()))
+            .unwrap();
+        let new_span_context = SpanContext::new(
+            trace_id,
+            SpanId::INVALID,
+            remote_context.span().span_context().trace_flags(),
+            false,
+            remote_context.span().span_context().trace_state().clone(),
+        );
+        (
+            remote_context.with_remote_span_context(new_span_context),
+            trace_id,
+        )
+    } else {
+        let remote_span = remote_context.span();
+        let span_context = remote_span.span_context();
+        let trace_id = span_context.trace_id();
+
+        (remote_context, trace_id)
+    }
+}
+
+fn sentry_baggage(request: &Request<Body>) -> (Option<Cow<str>>, Option<Cow<str>>) {
+    // baggage: sentry-transaction=fetchMeta,
+    //          sentry-public_key=0490a2c285ff494b91d9811c2f9bbf6d,
+    //          sentry-trace_id=c33d136d19a74b0686dcfa3e9ab74ea9,
+    //          sentry-sample_rate=1
+
+    let mut transaction_id = None;
+    let mut trace_id = None;
+
+    if let Some(baggage) = request.headers().get("baggage") {
+        baggage
+            .to_str()
+            .unwrap()
+            .split(',')
+            .flat_map(|s| s.split('='))
+            .collect::<Vec<_>>()
+            .chunks(2)
+            .for_each(|slice| {
+                if slice[0] == "sentry-transaction" {
+                    transaction_id =
+                        Some(percent_decode_str(slice[1].trim()).decode_utf8().unwrap());
+                } else if slice[0] == "sentry-trace_id" {
+                    trace_id = Some(Cow::from(slice[1]));
+                }
+            });
+    };
+    (transaction_id, trace_id)
 }

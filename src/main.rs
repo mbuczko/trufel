@@ -5,22 +5,21 @@ mod jwt;
 mod pusher;
 mod telemetry;
 mod user;
-mod vault;
+mod sentry;
 
 use ::pusher::PusherBuilder;
 use axum::{
     extract::State,
-    http::{Method, StatusCode},
+    http::{Method, StatusCode, header},
     routing::{get, post},
     Extension, Form, Json, Router,
 };
 use errors::AuthError;
 use futures::TryFutureExt;
 use jwt::Claims;
-use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use semver::Version;
-use sqlx::PgPool;
-use std::{net::SocketAddr, process::exit};
+use tracing_log::LogTracer;
+use sqlx::SqlitePool;
 use tower_http::{
     compression::CompressionLayer,
     cors::{Any, CorsLayer},
@@ -28,35 +27,36 @@ use tower_http::{
 };
 use user::User;
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    LogTracer::init().expect("Failed to set logger");
     telemetry::init_telemetry()?;
 
+    let _sentry = sentry::init_sentry();
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
     let jwks = jwt::fetch_jwks(&authority).await?;
 
-    let vault = match vault::init_vault("trufel", Version::parse(VERSION).unwrap()).await {
-        Ok(vault) => vault,
-        Err(_) => {
-            eprintln!("Migration failed");
-            exit(1);
-        }
-    };
+    let pool = db::init_pool()
+        .await
+        .expect("Could not connect to database");
 
-    let app = Router::with_state(vault.pool)
+    // apply migrations to keep database schema up to date
+    db::migrate(&pool, Version::parse(env!("CARGO_PKG_VERSION")).unwrap()).await?;
+
+    let app = Router::new()
         .route("/@me", get(user_identity))
         .route("/user", post(user_update))
         .route("/pusher/auth", post(pusher_auth))
         .route("/pusher/test", get(pusher_test))
+        .with_state(pool)
         .layer(CompressionLayer::new())
         .layer(Extension((authority, jwks)))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
                 .allow_methods(vec![Method::GET, Method::POST, Method::PUT])
-                .allow_headers(vec![AUTHORIZATION, CONTENT_TYPE]),
+                .allow_headers(vec![header::AUTHORIZATION, header::CONTENT_TYPE]),
         )
         .layer(
             TraceLayer::new_for_http()
@@ -64,16 +64,17 @@ async fn main() -> anyhow::Result<()> {
                 .on_response(telemetry::emit_response_trace_with_id),
         );
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3030));
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3030")
         .await
         .unwrap();
+
+    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+    axum::serve(listener, app).await.unwrap();
 
     Ok(())
 }
 
-async fn user_update(claims: Claims, State(pool): State<PgPool>) -> Result<Json<User>, AuthError> {
+async fn user_update(claims: Claims, State(pool): State<SqlitePool>) -> Result<Json<User>, AuthError> {
     tracing::info!("Updating user's profile...");
     let user = user::store(&pool, claims).await.map_err(|e| {
         tracing::error!("Could not store user's profile: {}", e);
@@ -84,7 +85,7 @@ async fn user_update(claims: Claims, State(pool): State<PgPool>) -> Result<Json<
 
 async fn user_identity(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(pool): State<SqlitePool>,
 ) -> Result<Json<User>, StatusCode> {
     match user::find_by_claims(&pool, &claims).await {
         Ok(some_user) => {
@@ -104,7 +105,7 @@ async fn user_identity(
 //#[axum_macros::debug_handler]
 async fn pusher_auth(
     claims: Claims,
-    State(pool): State<PgPool>,
+    State(pool): State<SqlitePool>,
     Form(payload): Form<pusher::AuthRequestPayload>,
 ) -> Result<Json<pusher::PusherAuth>, StatusCode> {
     tracing::info!("Authenticating pusher connection...");

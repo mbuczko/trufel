@@ -1,7 +1,7 @@
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Sqlite};
 use subtle_encoding::hex;
 
 use crate::{jwt::Claims, user};
@@ -28,7 +28,7 @@ pub struct AuthRequestPayload {
 pub async fn auth_by_claims(
     socket_id: String,
     channel_name: String,
-    pool: &Pool<Postgres>,
+    pool: &Pool<Sqlite>,
     claims: &Claims,
 ) -> anyhow::Result<Option<PusherAuth>> {
     if let Some(user) = user::find_by_claims(pool, claims).await? {
