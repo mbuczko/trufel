@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use crate::errors::DbError;
+use crate::extractors::DatabaseConnection;
 use crate::jwt::Claims;
-use crate::vault::Vault;
 
 use anyhow::bail;
 use serde::Serialize;
@@ -21,26 +21,23 @@ pub struct UserProfile {
     pub login: String,
 }
 
-pub async fn find_by_claims(vault: &Vault, claims: &Claims) -> anyhow::Result<Option<User>> {
-    let mut conn = vault.pool.acquire().await?;
+pub async fn find_by_claims(
+    db: &mut DatabaseConnection,
+    claims: &Claims,
+) -> anyhow::Result<Option<User>> {
     let uuid = Uuid::from_str(&claims.sub)?;
     let user = sqlx::query_as::<_, User>(
         "SELECT user_id, email, name, picture FROM users WHERE user_id = $1",
     )
     .bind(uuid)
-    .fetch_optional(&mut conn)
+    .fetch_optional(&mut *db.0)
     .await?;
 
     Ok(user)
 }
 
-#[tracing::instrument(
-    name = "Updating user's data in DB",
-    skip(vault, claims))
-]
-pub async fn store(vault: &Vault, claims: Claims) -> anyhow::Result<User> {
-    let mut conn = vault.pool.acquire().await?;
-
+#[tracing::instrument(name = "Updating user's data in DB", skip(db, claims))]
+pub async fn store(mut db: DatabaseConnection, claims: Claims) -> anyhow::Result<User> {
     assert!(claims.email.is_some());
     assert!(claims.name.is_some());
 
@@ -59,7 +56,7 @@ pub async fn store(vault: &Vault, claims: Claims) -> anyhow::Result<User> {
     // 3. There is no user with given `user_id` or `email`. Simplest case - new user
     //    record needs to be inserted.
 
-    if find_by_claims(vault, &claims).await?.is_some() {
+    if find_by_claims(&mut db, &claims).await?.is_some() {
         sqlx::query(
             r#"
             UPDATE users SET email=$1, name=$2, picture=$3
@@ -70,7 +67,7 @@ pub async fn store(vault: &Vault, claims: Claims) -> anyhow::Result<User> {
         .bind(&claims.name)
         .bind(&claims.picture)
         .bind(uuid)
-        .execute(&mut conn)
+        .execute(&mut *db.0)
         .await?;
     } else {
         sqlx::query(
@@ -84,11 +81,11 @@ pub async fn store(vault: &Vault, claims: Claims) -> anyhow::Result<User> {
         .bind(email)
         .bind(&claims.name)
         .bind(&claims.picture)
-        .execute(&mut conn)
+        .execute(&mut *db.0)
         .await?;
     }
 
-    match find_by_claims(vault, &claims).await {
+    match find_by_claims(&mut db, &claims).await {
         Ok(user) => Ok(user.unwrap()),
         Err(e) => {
             tracing::error!("User stored but not found. This should not happen: {}", e);

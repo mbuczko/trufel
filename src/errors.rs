@@ -1,9 +1,8 @@
 use alcoholic_jwt::ValidationError;
 use axum::{
-    body::BoxBody,
     http::{Response, StatusCode},
     response::IntoResponse,
-    Json,
+    Json, body::Body,
 };
 use serde_json::json;
 use thiserror::Error;
@@ -30,7 +29,7 @@ pub enum AuthError {
 }
 
 impl IntoResponse for AuthError {
-    fn into_response(self) -> Response<BoxBody> {
+    fn into_response(self) -> Response<Body> {
         let (status, error_message) = match self {
             AuthError::InvalidToken => (StatusCode::BAD_REQUEST, "Invalid token"),
             AuthError::JWKSFetchError => (StatusCode::SERVICE_UNAVAILABLE, "Cannot fetch JWKS"),
