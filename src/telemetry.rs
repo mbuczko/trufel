@@ -5,13 +5,12 @@ use axum::http::{Request, Response, self, header, Method};
 use opentelemetry_sdk::propagation::TraceContextPropagator;
 use opentelemetry_sdk::trace::{RandomIdGenerator, IdGenerator};
 use opentelemetry::trace::{TraceId, SpanContext, SpanId, TraceContextExt};
-use opentelemetry_otlp::WithExportConfig;
 use percent_encoding::percent_decode_str;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use std::borrow::{Cow, Borrow};
 use std::time::Duration;
-use tracing::{debug_span, field};
+use tracing::field;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
-use uuid::Uuid;
 
 pub fn init_telemetry() -> anyhow::Result<()> {
     opentelemetry::global::set_text_map_propagator(TraceContextPropagator::new());
@@ -76,36 +75,37 @@ pub fn make_span(request: &Request<Body>) -> tracing::Span {
         .map(|path_and_query| path_and_query.to_string())
         .unwrap_or_else(|| uri.path().to_owned());
 
-    debug_span!(
-        "HTTP",
-        request_duration = tracing::field::Empty,
-        status_code = tracing::field::Empty,
-        trace_id = %Uuid::new_v4().to_string().replace('-',""),
-        http.host = host,
-        http.scheme = scheme,
-        http.method = http_method,
-        http.route = http_route,
-        http.target = http_target,
-        http.user_agent = user_agent,
+    let (sentry_transaction_id, sentry_trace_id) = sentry_baggage(request);
+    let (remote_context, trace_id) =
+        create_context_with_trace(extract_remote_context(request.headers()), sentry_trace_id);
+
+    let name = format!("{http_method} {http_route}");
+    let span = tracing::info_span!(
+        "http",
+        trace_id = %trace_id,
+        http.host = %host,
+        http.scheme = %scheme,
+        http.method = %http_method,
+        http.route = %http_route,
+        http.target = %http_target,
+        http.user_agent = %user_agent,
         http.status_code = tracing::field::Empty,
-        otel.kind = "server",
-    )
+        otel.kind = %"server",
+        otel.name = %name,
+    );
+
+    sentry::configure_scope(|scope| {
+        scope.set_transaction(sentry_transaction_id.as_ref().map(|tid| tid.borrow()));
+    });
+
+    span.set_parent(remote_context);
+    span
 }
 
 pub fn emit_response_trace_with_id(response: &Response<Body>, latency: Duration, span: &tracing::Span) {
-    // use tracing_opentelemetry::OpenTelemetrySpanExt;
-
     let http_status = response.status().as_u16();
     let status_code = &field::display(http_status);
 
-    // let context = opentelemetry::Context::current();
-    // let context = tracing::Span::current().context();
-    // let span_context = context.span().span_context();
-    // let trace_id = span_context
-    //     .is_valid()
-    //     .then(|| span_context.trace_id().to_string());
-
-    // span.record("traceID", &field::display(&trace_id));
     span.record("request_duration", &field::display(latency.as_micros()));
     span.record("status_code", status_code);
     span.record("http.status_code", status_code);
@@ -185,6 +185,8 @@ fn create_context_with_trace(
 }
 
 fn sentry_baggage(request: &Request<Body>) -> (Option<Cow<str>>, Option<Cow<str>>) {
+    // Sample baggage header looks like this:
+    //
     // baggage: sentry-transaction=fetchMeta,
     //          sentry-public_key=0490a2c285ff494b91d9811c2f9bbf6d,
     //          sentry-trace_id=c33d136d19a74b0686dcfa3e9ab74ea9,

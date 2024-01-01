@@ -25,17 +25,20 @@ use routes::users;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     LogTracer::init().expect("Failed to set logger");
-    telemetry::init_telemetry()?;
 
+    // OpenTelemetry and Sentry integration
+    telemetry::init_telemetry()?;
     let _sentry = sentry::init_sentry();
+
+    // JWT and OIDC integration
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
     let jwks = jwt::fetch_jwks(&authority).await?;
 
+    // SQLite connection pre-initialized with a migration scripts if needed
     let pool = db::init_pool()
         .await
         .expect("Could not connect to database");
 
-    // apply migrations to keep database schema up to date
     db::migrate(&pool, Version::parse(env!("CARGO_PKG_VERSION")).unwrap()).await?;
 
     let app = Router::new()
