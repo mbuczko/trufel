@@ -9,6 +9,7 @@ package-lock.json
 package
 node_modules
 target
+dist
 build
 public
 Cargo.lock

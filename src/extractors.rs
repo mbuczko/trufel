@@ -1,17 +1,14 @@
-use alcoholic_jwt::JWKS;
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
     http::{request::Parts, StatusCode},
     Extension,
 };
-use axum_extra::{headers, TypedHeader};
-use headers::{authorization::Bearer, Authorization};
 use sqlx::SqlitePool;
 
 use crate::{
-    errors::AuthError,
-    jwt::{self, Claims},
+    jwt::Claims,
+    routes::users::{self, User}, errors::AuthError,
 };
 
 struct DatabaseConnection(sqlx::pool::PoolConnection<sqlx::Sqlite>);
@@ -23,20 +20,39 @@ where
 {
     type Rejection = AuthError;
 
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        use axum::RequestPartsExt;
+
+        let Extension(claims) = parts
+            .extract::<Extension<Claims>>()
+            .await
+            .map_err(|_| AuthError::InvalidClaims)?;
+
+        Ok(claims)
+    }
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for User
+where
+    SqlitePool: FromRef<S>,
+    S: Send + Sync,
+{
+    type Rejection = AuthError;
+
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         use axum::RequestPartsExt;
-        let Extension((authority, jwks)) = parts
-            .extract::<Extension<(String, JWKS)>>()
+        let Extension(claims) = parts
+            .extract::<Extension<Claims>>()
             .await
-            .map_err(|_| AuthError::JWKSFetchError)?;
+            .map_err(|_| AuthError::InvalidToken)?;
 
-        let TypedHeader(Authorization(bearer)) =
-            TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
-                .await
-                .map_err(|_| AuthError::InvalidToken)?;
+        let pool = SqlitePool::from_ref(state);
+        let user = users::find_by_claims(&pool, &claims)
+            .await
+            .map_err(|_| AuthError::InvalidClaims)?;
 
-        let claims = jwt::validate_token(bearer.token(), jwks, authority).await?;
-        Ok(claims)
+        Ok(user.unwrap())
     }
 }
 

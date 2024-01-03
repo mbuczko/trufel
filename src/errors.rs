@@ -26,6 +26,9 @@ pub enum AuthError {
 
     #[error("JWKS deserialization error")]
     JWKSDeserializeError,
+
+    #[error("Invalid claims")]
+    InvalidClaims,
 }
 
 impl IntoResponse for AuthError {
@@ -38,6 +41,9 @@ impl IntoResponse for AuthError {
             }
             AuthError::JWTValidationError(_) => {
                 (StatusCode::SERVICE_UNAVAILABLE, "Cannot validate token")
+            }
+            AuthError::InvalidClaims => {
+                (StatusCode::UNAUTHORIZED, "No valid claims found")
             }
         };
         let body = Json(json!({

@@ -2,14 +2,16 @@ mod db;
 mod errors;
 mod extractors;
 mod jwt;
+mod middlewares;
 mod routes;
 mod sentry;
 mod telemetry;
+mod templates;
 
 use axum::{
     http::{header, Method},
     routing::{get, post},
-    Extension, Router,
+    Extension, Router, middleware,
 };
 use semver::Version;
 use tower_http::{
@@ -21,6 +23,7 @@ use tracing_log::LogTracer;
 
 use routes::pusher;
 use routes::users;
+use templates::layout;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -31,8 +34,7 @@ async fn main() -> anyhow::Result<()> {
     let _sentry = sentry::init_sentry();
 
     // JWT and OIDC integration
-    let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
-    let jwks = jwt::fetch_jwks(&authority).await?;
+    let jwks = jwt::fetch_jwks().await?;
 
     // SQLite connection pre-initialized with a migration scripts if needed
     let pool = db::init_pool()
@@ -42,13 +44,15 @@ async fn main() -> anyhow::Result<()> {
     db::migrate(&pool, Version::parse(env!("CARGO_PKG_VERSION")).unwrap()).await?;
 
     let app = Router::new()
+        .route("/", get(layout::main))
         .route("/@me", get(users::user_identity))
         .route("/user", post(users::user_update))
         .route("/pusher/auth", post(pusher::pusher_auth))
         .route("/pusher/test", get(pusher::pusher_test))
+        .route_layer(middleware::from_fn(middlewares::add_claim_details))
         .with_state(pool)
         .layer(CompressionLayer::new())
-        .layer(Extension((authority, jwks)))
+        .layer(Extension(jwks))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
