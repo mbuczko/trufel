@@ -83,23 +83,8 @@ pub async fn user_update(
     Ok(Json(user))
 }
 
-pub async fn user_identity(
-    claims: Claims,
-    State(pool): State<SqlitePool>,
-) -> Result<Json<User>, StatusCode> {
+pub async fn user_identity(user: User) -> Result<Json<User>, StatusCode> {
     tracing::info!("Fetching user's profile");
-
-    match find_by_claims(&pool, &claims).await {
-        Ok(some_user) => {
-            if let Some(user) = some_user {
-                Ok(Json(user))
-            } else {
-                Err(StatusCode::NOT_FOUND)
-            }
-        }
-        Err(e) => {
-            tracing::error!("Could not fetch user's profile: {}", e);
-            Err(StatusCode::BAD_REQUEST)
-        }
-    }
+    Ok(Json(user))
 }
+

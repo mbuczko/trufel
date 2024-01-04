@@ -42,5 +42,5 @@ lazy_static = "1.4.0"
 
 [dependencies.tower-http]
 version = "*"
-features = ["add-extension", "cors", "compression-full", "trace"]
+features = ["fs", "add-extension", "cors", "compression-full", "trace"]
 

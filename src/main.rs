@@ -1,3 +1,5 @@
+#![feature(str_split_remainder)]
+
 mod db;
 mod errors;
 mod extractors;
@@ -17,6 +19,7 @@ use semver::Version;
 use tower_http::{
     compression::CompressionLayer,
     cors::{Any, CorsLayer},
+    services::ServeDir,
     trace::TraceLayer,
 };
 use tracing_log::LogTracer;
@@ -43,6 +46,7 @@ async fn main() -> anyhow::Result<()> {
 
     db::migrate(&pool, Version::parse(env!("CARGO_PKG_VERSION")).unwrap()).await?;
 
+    let serve_dir = ServeDir::new("dist/assets");
     let app = Router::new()
         .route("/", get(layout::main))
         .route("/@me", get(users::user_identity))
@@ -50,6 +54,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/pusher/auth", post(pusher::pusher_auth))
         .route("/pusher/test", get(pusher::pusher_test))
         .route_layer(middleware::from_fn(middlewares::add_claim_details))
+        .nest_service("/assets", serve_dir.clone())
         .with_state(pool)
         .layer(CompressionLayer::new())
         .layer(Extension(jwks))

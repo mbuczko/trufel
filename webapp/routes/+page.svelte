@@ -1,13 +1,17 @@
 <script>
-import SecurityContext from "$lib/SecurityContext.svelte";
+import { identity } from '$lib/store.js';
 </script>
 
 <svelte:head>
 	<title>Trufel</title>
 </svelte:head>
 
-<SecurityContext>
-    <div>
-        Welcome
-    </div>
-</SecurityContext>
+<div>
+	{#if $identity.authenticating}
+		<p>waiting...</p>
+	{:else if $identity.id}
+		<slot />
+	{:else}
+		<p>Unauthenticated</p>
+	{/if}
+</div>
