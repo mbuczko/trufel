@@ -7,6 +7,9 @@ export const identity = writable({
 	firstName: null,
 	lastName: null,
 	picture: null,
-	authenticating: false
+	authenticating: false,
+    attributes: {
+        picture: null
+    }
 });
 export const keycloak = writable({});

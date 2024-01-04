@@ -26,7 +26,7 @@ const { login, logout } = getContext('auth');
 		<img
 			alt="avatar"
 			class="inline w-8 h-8 rounded-full"
-			src={$identity.picture || defaultPicture}
+			src={($identity.attributes && $identity.attributes.picture) || defaultPicture}
 			width="384"
 			height="512"
 		/>

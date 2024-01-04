@@ -1,4 +1,6 @@
 <script>
+// @ts-nocheck
+
 import { onMount, setContext } from 'svelte';
 import { identity, keycloak } from '$lib/store.js';
 import Keycloak from 'keycloak-js';
@@ -37,6 +39,7 @@ onMount(() => {
 
 setContext('auth', {
 	getAuthClient: () => $keycloak,
+    getIdentity: () => $identity,
 	login: () => $keycloak.login({ redirectUri: 'http://localhost:5173/' }),
 	logout: () => $keycloak.logout({ redirectUri: 'http://localhost:5173/' })
 });
