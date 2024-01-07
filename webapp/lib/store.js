@@ -8,8 +8,8 @@ export const identity = writable({
 	lastName: null,
 	picture: null,
 	authenticating: false,
-    attributes: {
-        picture: null
-    }
+	attributes: {
+		picture: null
+	}
 });
 export const keycloak = writable({});

@@ -7,7 +7,7 @@ use axum::{
 use crate::jwt::Claims;
 
 pub async fn add_claim_details(
-    claims: Claims,
+    claims: Option<Claims>,
     mut request: Request,
     next: Next,
 ) -> Result<impl IntoResponse, Response> {

@@ -2,7 +2,7 @@
 import { onMount, getContext } from 'svelte';
 import Pusher from 'pusher-js';
 
-const { getAuthClient, getAuthStatus } = getContext('auth');
+const { getAuthClient } = getContext('auth');
 
 let firstName;
 let lastName;
