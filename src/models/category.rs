@@ -1,6 +1,6 @@
-use hugsqlx::{HugSqlx, params};
+use hugsqlx::{params, HugSqlx};
 use serde::{Deserialize, Serialize};
-use sqlx::{Sqlite, Pool};
+use sqlx::{Pool, Sqlite};
 use uuid::Uuid;
 
 use crate::errors::InternalError;
@@ -19,8 +19,12 @@ pub struct Category {
 }
 
 pub async fn fetch_categories(pool: &Pool<Sqlite>, user: &User) -> anyhow::Result<Vec<Category>> {
-    Ok(Categories::fetch_categories_for_user_id::<_, Category>(pool, params!(user.id)).await.map_err(|e| {
-        tracing::error!("Could load user's applications: ${e}");
-        InternalError::UserCategoriesFetchError
-    })?)
+    Ok(
+        Categories::fetch_categories_for_user_id::<_, Category>(pool, params!(user.id))
+            .await
+            .map_err(|e| {
+                tracing::error!("Could load user's applications: ${e}");
+                InternalError::UserCategoriesFetchError
+            })?,
+    )
 }

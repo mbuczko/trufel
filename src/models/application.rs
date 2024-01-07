@@ -1,6 +1,6 @@
-use hugsqlx::{HugSqlx, params};
+use hugsqlx::{params, HugSqlx};
 use serde::{Deserialize, Serialize};
-use sqlx::{Sqlite, Pool};
+use sqlx::{Pool, Sqlite};
 use uuid::Uuid;
 
 use crate::errors::InternalError;
@@ -20,12 +20,19 @@ pub struct Application {
     url: String,
     icon: String,
     visible: bool,
-    position: u16
+    position: u16,
 }
 
-pub async fn fetch_applications(pool: &Pool<Sqlite>, user: &User) -> anyhow::Result<Vec<Application>> {
-    Ok(Applications::fetch_applications_for_user_id::<_, Application>(pool, params!(user.id)).await.map_err(|e| {
-        tracing::error!("Could load user's applications: ${e}");
-        InternalError::UserAppsFetchError
-    })?)
+pub async fn fetch_applications(
+    pool: &Pool<Sqlite>,
+    user: &User,
+) -> anyhow::Result<Vec<Application>> {
+    Ok(
+        Applications::fetch_applications_for_user_id::<_, Application>(pool, params!(user.id))
+            .await
+            .map_err(|e| {
+                tracing::error!("Could load user's applications: ${e}");
+                InternalError::UserAppsFetchError
+            })?,
+    )
 }

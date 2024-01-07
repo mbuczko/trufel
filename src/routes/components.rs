@@ -5,9 +5,9 @@ use sqlx::SqlitePool;
 use crate::{
     errors::ServiceError,
     models::{
-        application::{Application, fetch_applications},
-        bookmark::{Bookmark, fetch_bookmarks},
-        category::{Category, fetch_categories},
+        application::{fetch_applications, Application},
+        bookmark::{fetch_bookmarks, Bookmark},
+        category::{fetch_categories, Category},
         user::User,
     },
 };

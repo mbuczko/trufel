@@ -14,7 +14,7 @@ use sqlx::SqlitePool;
 use crate::{
     errors::AuthError,
     jwt::{self, Claims},
-    models::user::{User, self},
+    models::user::{self, User},
 };
 
 struct DatabaseConnection(sqlx::pool::PoolConnection<sqlx::Sqlite>);

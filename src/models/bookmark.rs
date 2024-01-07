@@ -1,6 +1,6 @@
-use hugsqlx::{HugSqlx, params};
+use hugsqlx::{params, HugSqlx};
 use serde::{Deserialize, Serialize};
-use sqlx::{Sqlite, Pool};
+use sqlx::{Pool, Sqlite};
 use uuid::Uuid;
 
 use crate::errors::InternalError;
@@ -20,12 +20,16 @@ pub struct Bookmark {
     url: String,
     icon: String,
     visible: bool,
-    position: u16
+    position: u16,
 }
 
 pub async fn fetch_bookmarks(pool: &Pool<Sqlite>, user: &User) -> anyhow::Result<Vec<Bookmark>> {
-    Ok(Bookmarks::fetch_bookmarks_for_user_id::<_, Bookmark>(pool, params!(user.id)).await.map_err(|e| {
-        tracing::error!("Could load user's applications: ${e}");
-        InternalError::UserLinksFetchError
-    })?)
+    Ok(
+        Bookmarks::fetch_bookmarks_for_user_id::<_, Bookmark>(pool, params!(user.id))
+            .await
+            .map_err(|e| {
+                tracing::error!("Could load user's applications: ${e}");
+                InternalError::UserLinksFetchError
+            })?,
+    )
 }

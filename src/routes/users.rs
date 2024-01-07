@@ -1,7 +1,10 @@
 use axum::{extract::Form, extract::State, http::StatusCode, Json};
 use sqlx::SqlitePool;
 
-use crate::{models::user::{User, self}, errors::ServiceError};
+use crate::{
+    errors::ServiceError,
+    models::user::{self, User},
+};
 
 pub async fn user_update(
     State(pool): State<SqlitePool>,

@@ -71,7 +71,9 @@ async fn main() -> anyhow::Result<()> {
                 .on_response(telemetry::emit_response_trace_with_id),
         );
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3030").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3030")
+        .await
+        .unwrap();
 
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();

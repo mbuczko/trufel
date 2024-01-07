@@ -1,11 +1,11 @@
 use anyhow::bail;
 use hugsqlx::{params, HugSqlx};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use sqlx::{Pool, Sqlite};
 use std::str::FromStr;
+use uuid::Uuid;
 
-use crate::{jwt::Claims, errors::InternalError};
+use crate::{errors::InternalError, jwt::Claims};
 
 #[derive(HugSqlx)]
 #[queries = "resources/db/queries/users.sql"]
