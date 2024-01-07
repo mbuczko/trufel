@@ -5,7 +5,7 @@ use uuid::Uuid;
 use sqlx::{Pool, Sqlite};
 use std::str::FromStr;
 
-use crate::{jwt::Claims, errors::DbError};
+use crate::{jwt::Claims, errors::InternalError};
 
 #[derive(HugSqlx)]
 #[queries = "resources/db/queries/users.sql"]
@@ -13,7 +13,7 @@ struct DbUsers {}
 
 #[derive(Serialize, Deserialize, Debug, sqlx::FromRow)]
 pub struct User {
-    #[serde(rename = "user_id")]
+    #[sqlx(rename = "user_id")]
     pub id: Uuid,
     pub email: String,
     pub name: String,
@@ -63,7 +63,7 @@ pub async fn store(pool: &Pool<Sqlite>, user: User) -> anyhow::Result<User> {
         Ok(user) => Ok(user.unwrap()),
         Err(e) => {
             tracing::error!("User stored but not found. This should not happen: {}", e);
-            bail!(DbError::UserNotFound)
+            bail!(InternalError::UserUpdateError)
         }
     }
 }

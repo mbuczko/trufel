@@ -14,8 +14,11 @@ CREATE TABLE IF NOT EXISTS applications
   description TEXT,
   url TEXT NOT NULL,
   icon TEXT,
-  visible BOOLEAN NOT NULL DEFAULT TRUE,
-  order: INTEGER NOT NULL
+  visibility BOOLEAN NOT NULL DEFAULT TRUE,
+  position INTEGER NOT NULL,
+  user_id UUID NOT NULL,
+
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
 CREATE UNIQUE INDEX users_email_idx ON users(email);

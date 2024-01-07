@@ -1,19 +1,15 @@
 use axum::{extract::Form, extract::State, http::StatusCode, Json};
 use sqlx::SqlitePool;
 
-use crate::{errors::AuthError, models::user::{User, self}};
+use crate::{models::user::{User, self}, errors::ServiceError};
 
 pub async fn user_update(
     State(pool): State<SqlitePool>,
     Form(user): Form<User>,
-) -> Result<Json<User>, AuthError> {
+) -> Result<Json<User>, ServiceError> {
     tracing::info!("Updating user's profile... {:?}", user);
 
-    let user = user::store(&pool, user).await.map_err(|e| {
-        tracing::error!("Could not store user's profile: {}", e);
-        AuthError::JWKSFetchError
-    })?;
-
+    let user = user::store(&pool, user).await?;
     Ok(Json(user))
 }
 

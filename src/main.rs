@@ -9,7 +9,6 @@ mod models;
 mod routes;
 mod sentry;
 mod telemetry;
-mod templates;
 
 use axum::{
     http::{header, Method},
@@ -26,9 +25,9 @@ use tower_http::{
 };
 use tracing_log::LogTracer;
 
+use routes::bookmarks;
 use routes::pusher;
 use routes::users;
-use templates::layout;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -50,9 +49,9 @@ async fn main() -> anyhow::Result<()> {
 
     let serve_dir = ServeDir::new("dist/assets");
     let app = Router::new()
-        .route("/", get(layout::main))
         .route("/@me", get(users::user_identity))
         .route("/user", post(users::user_update))
+        .route("/bookmarks", post(bookmarks::fetch_bookmarks))
         .route("/pusher/auth", post(pusher::pusher_auth))
         .route("/pusher/test", get(pusher::pusher_test))
         .route_layer(middleware::from_fn(middlewares::add_claim_details))
@@ -72,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
                 .on_response(telemetry::emit_response_trace_with_id),
         );
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3030").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3030").await.unwrap();
 
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();

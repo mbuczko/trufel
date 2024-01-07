@@ -8,16 +8,25 @@ use axum::{
 use serde_json::json;
 use thiserror::Error;
 
+// Make our own error that wraps `anyhow::Error`.
+pub struct ServiceError(anyhow::Error);
+
 #[derive(Error, Debug)]
-pub enum DbError {
-    #[error("User not found")]
-    UserNotFound,
+pub enum InternalError {
+    #[error("User update failed")]
+    UserUpdateError,
+
+    #[error("User's apps couldn't be fetched")]
+    UserAppsFetchError,
 }
 
 #[derive(Error, Debug)]
 pub enum AuthError {
     #[error("Invalid token")]
     InvalidToken,
+
+    #[error("Invalid claims")]
+    InvalidClaims,
 
     #[error("JWT validation error")]
     JWTValidationError(ValidationError),
@@ -27,9 +36,27 @@ pub enum AuthError {
 
     #[error("JWKS deserialization error")]
     JWKSDeserializeError,
+}
 
-    #[error("Invalid claims")]
-    InvalidClaims,
+impl IntoResponse for ServiceError {
+    fn into_response(self) -> Response<Body> {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong: {}", self.0),
+        )
+            .into_response()
+    }
+}
+
+/// This enables using `?` on functions that return `Result<_, anyhow::Error>` to turn them into
+/// `Result<_, ServiceError>`. That way we don't need to do that manually.
+impl<E> From<E> for ServiceError
+where
+    E: Into<anyhow::Error>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
+    }
 }
 
 impl IntoResponse for AuthError {
