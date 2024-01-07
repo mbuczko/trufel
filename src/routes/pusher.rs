@@ -9,8 +9,7 @@ use sqlx::{Pool, Sqlite};
 use subtle_encoding::hex;
 
 use crate::jwt::Claims;
-
-use super::users;
+use crate::models::user;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -37,7 +36,7 @@ pub async fn auth_by_claims(
     pool: &Pool<Sqlite>,
     claims: &Claims,
 ) -> anyhow::Result<Option<PusherAuth>> {
-    if let Some(user) = users::find_by_claims(pool, claims).await? {
+    if let Some(user) = user::find_by_claims(pool, claims).await? {
         let key = std::env::var("PUSHER_KEY").unwrap();
         let secret = std::env::var("PUSHER_SECRET").unwrap();
 

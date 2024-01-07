@@ -13,5 +13,4 @@ pub async fn add_claim_details(
 ) -> Result<impl IntoResponse, Response> {
     request.extensions_mut().insert(claims);
     Ok(next.run(request).await)
-
 }

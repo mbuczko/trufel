@@ -1,8 +1,9 @@
 use alcoholic_jwt::ValidationError;
 use axum::{
+    body::Body,
     http::{Response, StatusCode},
     response::IntoResponse,
-    Json, body::Body,
+    Json,
 };
 use serde_json::json;
 use thiserror::Error;
@@ -42,9 +43,7 @@ impl IntoResponse for AuthError {
             AuthError::JWTValidationError(_) => {
                 (StatusCode::SERVICE_UNAVAILABLE, "Cannot validate token")
             }
-            AuthError::InvalidClaims => {
-                (StatusCode::UNAUTHORIZED, "No valid claims found")
-            }
+            AuthError::InvalidClaims => (StatusCode::UNAUTHORIZED, "No valid claims found"),
         };
         let body = Json(json!({
             "error": error_message,

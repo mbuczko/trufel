@@ -13,8 +13,9 @@ mod templates;
 
 use axum::{
     http::{header, Method},
+    middleware,
     routing::{get, post},
-    Extension, Router, middleware,
+    Extension, Router,
 };
 use semver::Version;
 use tower_http::{
@@ -71,9 +72,7 @@ async fn main() -> anyhow::Result<()> {
                 .on_response(telemetry::emit_response_trace_with_id),
         );
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3030")
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3030").await.unwrap();
 
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();

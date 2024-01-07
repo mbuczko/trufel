@@ -13,7 +13,8 @@ use sqlx::SqlitePool;
 
 use crate::{
     errors::AuthError,
-    jwt::{self, Claims}, models::user::User, routes::users,
+    jwt::{self, Claims},
+    models::user::{User, self},
 };
 
 struct DatabaseConnection(sqlx::pool::PoolConnection<sqlx::Sqlite>);
@@ -59,7 +60,7 @@ where
 
         tracing::info!("RETR CLAIMS {:?}", claims);
         let pool = SqlitePool::from_ref(state);
-        let user = users::find_by_claims(&pool, &claims)
+        let user = user::find_by_claims(&pool, &claims)
             .await
             .map_err(|_| AuthError::InvalidClaims)?;
 

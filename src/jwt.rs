@@ -1,13 +1,13 @@
 use std::env;
 
 use alcoholic_jwt::{token_kid, validate, Validation, JWKS};
-use serde::{Deserialize, Serialize};
 use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 
 use crate::errors::AuthError;
 
 lazy_static! {
-   static ref AUTHORITY: String = env::var("AUTHORITY").expect("AUTHORITY must be set");
+    static ref AUTHORITY: String = env::var("AUTHORITY").expect("AUTHORITY must be set");
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -20,24 +20,27 @@ pub struct Claims {
 }
 
 pub async fn fetch_jwks() -> Result<JWKS, AuthError> {
-    let jwks = reqwest::get(format!("{}/{}", *AUTHORITY, "protocol/openid-connect/certs"))
-        .await
-        .map_err(|_| AuthError::JWKSFetchError)?
-        .json::<JWKS>()
-        .await
-        .map_err(|e| {
-            tracing::error!("JWKS deserializing error: {}", e);
-            AuthError::JWKSDeserializeError
-        })?;
+    let jwks = reqwest::get(format!(
+        "{}/{}",
+        *AUTHORITY, "protocol/openid-connect/certs"
+    ))
+    .await
+    .map_err(|_| AuthError::JWKSFetchError)?
+    .json::<JWKS>()
+    .await
+    .map_err(|e| {
+        tracing::error!("JWKS deserializing error: {}", e);
+        AuthError::JWKSDeserializeError
+    })?;
 
     Ok(jwks)
 }
 
-pub async fn validate_token(
-    token: &str,
-    jwks: &JWKS,
-) -> Result<Claims, AuthError> {
-    let validations = vec![Validation::Issuer(AUTHORITY.to_string()), Validation::SubjectPresent];
+pub async fn validate_token(token: &str, jwks: &JWKS) -> Result<Claims, AuthError> {
+    let validations = vec![
+        Validation::Issuer(AUTHORITY.to_string()),
+        Validation::SubjectPresent,
+    ];
     let kid = token_kid(token)
         .expect("Failed to decode token headers")
         .expect("No 'kid' claim present in token");

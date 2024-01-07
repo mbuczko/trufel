@@ -1,7 +1,7 @@
 use rust_embed::RustEmbed;
 use semver::Version;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions, SqliteRow, SqliteJournalMode};
-use sqlx::{Executor, SqlitePool, Row};
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteRow};
+use sqlx::{Executor, Row, SqlitePool};
 use std::{env, fmt, str};
 
 #[derive(RustEmbed)]
