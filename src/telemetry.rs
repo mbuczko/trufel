@@ -1,15 +1,15 @@
 use axum::body::Body;
 use axum::extract::{MatchedPath, OriginalUri};
 use axum::http::uri::Scheme;
-use axum::http::{Request, Response, self, header, Method};
+use axum::http::{self, header, Method, Request, Response};
+use opentelemetry::trace::{SpanContext, SpanId, TraceContextExt, TraceId};
 use opentelemetry_sdk::propagation::TraceContextPropagator;
-use opentelemetry_sdk::trace::{RandomIdGenerator, IdGenerator};
-use opentelemetry::trace::{TraceId, SpanContext, SpanId, TraceContextExt};
+use opentelemetry_sdk::trace::{IdGenerator, RandomIdGenerator};
 use percent_encoding::percent_decode_str;
-use tracing_opentelemetry::OpenTelemetrySpanExt;
-use std::borrow::{Cow, Borrow};
+use std::borrow::{Borrow, Cow};
 use std::time::Duration;
 use tracing::field;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 
 pub fn init_telemetry() -> anyhow::Result<()> {
@@ -102,14 +102,21 @@ pub fn make_span(request: &Request<Body>) -> tracing::Span {
     span
 }
 
-pub fn emit_response_trace_with_id(response: &Response<Body>, latency: Duration, span: &tracing::Span) {
+pub fn emit_response_trace_with_id(
+    response: &Response<Body>,
+    latency: Duration,
+    span: &tracing::Span,
+) {
     let http_status = response.status().as_u16();
     let status_code = &field::display(http_status);
 
     span.record("request_duration", &field::display(latency.as_micros()));
     span.record("status_code", status_code);
     span.record("http.status_code", status_code);
-    span.record("otel.status_code", if http_status != 500 { "OK" } else { "ERROR" });
+    span.record(
+        "otel.status_code",
+        if http_status != 500 { "OK" } else { "ERROR" },
+    );
 }
 
 fn http_method(method: &Method) -> String {

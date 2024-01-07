@@ -5,13 +5,16 @@ use axum::{
     http::{request::Parts, StatusCode},
     Extension,
 };
-use axum_extra::{headers, TypedHeader};
-use headers::{authorization::Bearer, Authorization};
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
+    TypedHeader,
+};
 use sqlx::SqlitePool;
 
 use crate::{
     errors::AuthError,
     jwt::{self, Claims},
+    models::user::{User, self},
 };
 
 struct DatabaseConnection(sqlx::pool::PoolConnection<sqlx::Sqlite>);
@@ -23,20 +26,45 @@ where
 {
     type Rejection = AuthError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         use axum::RequestPartsExt;
-        let Extension((authority, jwks)) = parts
-            .extract::<Extension<(String, JWKS)>>()
+        let Extension(jwks) = parts
+            .extract::<Extension<JWKS>>()
             .await
             .map_err(|_| AuthError::JWKSFetchError)?;
 
-        let TypedHeader(Authorization(bearer)) =
-            TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
-                .await
-                .map_err(|_| AuthError::InvalidToken)?;
+        let TypedHeader(Authorization(bearer)) = parts
+            .extract::<TypedHeader<Authorization<Bearer>>>()
+            .await
+            .map_err(|_| AuthError::InvalidToken)?;
 
-        let claims = jwt::validate_token(bearer.token(), jwks, authority).await?;
+        let claims = jwt::validate_token(bearer.token(), &jwks).await?;
         Ok(claims)
+    }
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for User
+where
+    SqlitePool: FromRef<S>,
+    S: Send + Sync,
+{
+    type Rejection = AuthError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        use axum::RequestPartsExt;
+        let Extension(claims) = parts
+            .extract::<Extension<Claims>>()
+            .await
+            .map_err(|_| AuthError::InvalidToken)?;
+
+        tracing::info!("RETR CLAIMS {:?}", claims);
+        let pool = SqlitePool::from_ref(state);
+        let user = user::find_by_claims(&pool, &claims)
+            .await
+            .map_err(|_| AuthError::InvalidClaims)?;
+
+        Ok(user.unwrap())
     }
 }
 

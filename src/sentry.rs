@@ -1,5 +1,5 @@
-use std::env;
 use sentry::ClientInitGuard;
+use std::env;
 
 /// Initializes sentry - an exception sink
 pub fn init_sentry() -> ClientInitGuard {

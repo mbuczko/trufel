@@ -37,20 +37,21 @@ function initPusher() {
 	   console.log(`${message.sender} says: ${message.content}`);
 	   }); */
 	const channel = client.subscribe('private-chat-room').bind_global((eventName, data) => {
-        console.log(eventName, data);
-    });
+		console.log(eventName, data);
+	});
 	client.connection.bind('connected', function (e) {
-        console.info('Connected to channel')
+		console.info('Connected to channel');
 	});
 	client.connection.bind('error', function (e) {
 		if (e.error && e.error.data && e.error.data.code === 4004) {
-		    console.error('Over limit!', e);
+			console.error('Over limit!', e);
 		}
 	});
 }
 </script>
 
 <div>
-	Logged as: {firstName}
-	{lastName}
+	{#if getAuthStatus() === 'authenticated'}
+		Logged as: {firstName} {lastName}
+	{/if}
 </div>

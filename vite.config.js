@@ -1,11 +1,9 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
 
-/** @type {import('vite').UserConfig} */
-const config = {
-  plugins: [sveltekit()],
-  build: {
-    minify: true
-  }
-};
-
-export default config;
+export default defineConfig({
+	plugins: [sveltekit()],
+	build: {
+		minify: true
+	}
+});
