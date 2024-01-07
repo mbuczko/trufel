@@ -25,7 +25,7 @@ use tower_http::{
 };
 use tracing_log::LogTracer;
 
-use routes::bookmarks;
+use routes::components;
 use routes::pusher;
 use routes::users;
 
@@ -51,7 +51,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/@me", get(users::user_identity))
         .route("/user", post(users::user_update))
-        .route("/bookmarks", post(bookmarks::fetch_bookmarks))
+        .route("/components", post(components::fetch_components))
         .route("/pusher/auth", post(pusher::pusher_auth))
         .route("/pusher/test", get(pusher::pusher_test))
         .route_layer(middleware::from_fn(middlewares::add_claim_details))

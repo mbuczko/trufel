@@ -23,7 +23,7 @@ pub struct Application {
     position: u16
 }
 
-pub async fn fetch_applications(pool: &Pool<Sqlite>, user: User) -> anyhow::Result<Vec<Application>> {
+pub async fn fetch_applications(pool: &Pool<Sqlite>, user: &User) -> anyhow::Result<Vec<Application>> {
     Ok(Applications::fetch_applications_for_user_id::<_, Application>(pool, params!(user.id)).await.map_err(|e| {
         tracing::error!("Could load user's applications: ${e}");
         InternalError::UserAppsFetchError

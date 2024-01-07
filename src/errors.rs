@@ -18,6 +18,12 @@ pub enum InternalError {
 
     #[error("User's apps couldn't be fetched")]
     UserAppsFetchError,
+
+    #[error("User's links couldn't be fetched")]
+    UserLinksFetchError,
+
+    #[error("User's categories couldn't be fetched")]
+    UserCategoriesFetchError,
 }
 
 #[derive(Error, Debug)]
