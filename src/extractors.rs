@@ -58,7 +58,6 @@ where
             .await
             .map_err(|_| AuthError::InvalidToken)?;
 
-        tracing::info!("RETR CLAIMS {:?}", claims);
         let pool = SqlitePool::from_ref(state);
         let user = user::find_by_claims(&pool, &claims)
             .await

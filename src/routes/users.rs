@@ -10,7 +10,7 @@ pub async fn user_update(
     State(pool): State<SqlitePool>,
     Form(user): Form<User>,
 ) -> Result<Json<User>, ServiceError> {
-    tracing::info!("Updating user's profile... {:?}", user);
+    tracing::info!(user = ?user, "Updating user's profile");
 
     let user = user::store(&pool, user).await?;
     Ok(Json(user))

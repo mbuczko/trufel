@@ -29,7 +29,7 @@ pub async fn fetch_jwks() -> Result<JWKS, AuthError> {
     .json::<JWKS>()
     .await
     .map_err(|e| {
-        tracing::error!("JWKS deserializing error: {}", e);
+        tracing::error!(error = ?e, "JWKS deserializing error");
         AuthError::JWKSDeserializeError
     })?;
 
@@ -55,7 +55,7 @@ pub async fn validate_token(token: &str, jwks: &JWKS) -> Result<Claims, AuthErro
             picture: jwt.claims["picture"].as_str().map(String::from),
         }),
         Err(e) => {
-            println!("validation error: {:?}", e);
+            tracing::error!(error = ?e, "validation error");
             Err(AuthError::JWTValidationError(e))
         }
     }

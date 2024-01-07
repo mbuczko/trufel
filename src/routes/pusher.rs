@@ -71,7 +71,7 @@ pub async fn pusher_auth(
             }
         }
         Err(e) => {
-            tracing::error!("Could not authenticate pusher request: {}", e);
+            tracing::error!(error = ?e, "Could not authenticate pusher request");
             Err(StatusCode::BAD_REQUEST)
         }
     }

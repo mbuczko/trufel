@@ -31,7 +31,7 @@ pub async fn fetch_applications(
         Applications::fetch_applications_for_user_id::<_, Application>(pool, params!(user.id))
             .await
             .map_err(|e| {
-                tracing::error!("Could load user's applications: ${e}");
+                tracing::error!(error = ?e, "Could load user's applications");
                 InternalError::UserAppsFetchError
             })?,
     )

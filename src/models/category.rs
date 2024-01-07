@@ -23,7 +23,7 @@ pub async fn fetch_categories(pool: &Pool<Sqlite>, user: &User) -> anyhow::Resul
         Categories::fetch_categories_for_user_id::<_, Category>(pool, params!(user.id))
             .await
             .map_err(|e| {
-                tracing::error!("Could load user's applications: ${e}");
+                tracing::error!(error = ?e, "Could load user's applications");
                 InternalError::UserCategoriesFetchError
             })?,
     )

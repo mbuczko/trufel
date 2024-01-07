@@ -62,7 +62,7 @@ pub async fn store(pool: &Pool<Sqlite>, user: User) -> anyhow::Result<User> {
     match find_by_user_id(pool, &uid).await {
         Ok(user) => Ok(user.unwrap()),
         Err(e) => {
-            tracing::error!("User stored but not found. This should not happen: {}", e);
+            tracing::error!(error = ?e, "User stored but not found. This should not happen");
             bail!(InternalError::UserUpdateError)
         }
     }

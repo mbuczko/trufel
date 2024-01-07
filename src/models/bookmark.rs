@@ -28,7 +28,7 @@ pub async fn fetch_bookmarks(pool: &Pool<Sqlite>, user: &User) -> anyhow::Result
         Bookmarks::fetch_bookmarks_for_user_id::<_, Bookmark>(pool, params!(user.id))
             .await
             .map_err(|e| {
-                tracing::error!("Could load user's applications: ${e}");
+                tracing::error!(error = ?e, "Could load user's applications");
                 InternalError::UserLinksFetchError
             })?,
     )
