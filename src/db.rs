@@ -85,7 +85,7 @@ async fn upgrade(
                 tracing::debug!("Upgraded to latest migration {m}");
                 return Ok(current_version);
             }
-            Err(e) => panic!("Couldn't upgrade the schema. Bailing out: {:?}", e),
+            Err(e) => panic!("Couldn't upgrade the schema. Bailing out: {e}")
         }
     }
     Ok(app_semver)
