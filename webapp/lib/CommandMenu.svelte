@@ -17,7 +17,7 @@ import { onMount, setContext } from 'svelte';
 const items = [];
 
 /** @type Number */
-let currentItemIndex = 0;
+let currentItemIndex = -1;
 
 /** @type HTMLElement */
 let searchElement;

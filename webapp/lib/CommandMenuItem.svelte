@@ -5,19 +5,19 @@ import { getContext } from "svelte";
 export let title;
 /** @type String - keyboard shortcut */
 export let shortcut = "";
+
 /** @type boolean - selection state */
-export let selected = false;
+let selected = false;
 /** @type boolean - visibility state */
 let hidden = false;
+/** @type HTMLElement */
+let ref;
 
 /**
  * A random ID to recognize the item by a parent section
  */
 const uuid = crypto.randomUUID();
 const registerStatus = getContext('command-menu-section').registerStatus;
-
-/** @type HTMLElement */
-let ref;
 
 /**
  * Dispatches a custom event to notify {CommandMenu} component about selection change
