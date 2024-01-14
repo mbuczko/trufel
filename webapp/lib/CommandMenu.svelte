@@ -1,6 +1,9 @@
 <script>
 import { onMount, setContext } from 'svelte';
 
+/** @type {Number} - max visible items in menu */
+export let maxVisible = 6;
+
 /**
  * @typedef CommandMenuItemFns
  * @property {function(boolean):void} toggleActive
@@ -19,6 +22,9 @@ const items = [];
 
 /** @type Number */
 let currentItemIndex = -1;
+
+/** @type Number */
+let itemsRegistered = 0;
 
 /** @type HTMLElement */
 let searchElement;
@@ -67,12 +73,13 @@ function findPrev(startIndex) {
  */
 function onChange() {
     let p = pattern.toLowerCase();
+    let c = 0;
     let f = -1;
     items.forEach((item, i) => {
         let matches = pattern.length === 0 || item.fns.matchesTitle(p);
 
         item.fns.toggleActive(false);
-        item.fns.toggleHidden(!matches);
+        item.fns.toggleHidden(!matches || (c++) >= maxVisible);
 
         // if there is any match, record first index and
         // make corresponding {CommandMenuItem} active.
@@ -142,6 +149,10 @@ setContext('command-menu',
         /** @type CommandMenuItemFns */ fns
     ) => {
         items.push({id, fns});
+        itemsRegistered++;
+        if (itemsRegistered > maxVisible) {
+            fns.toggleHidden(true);
+        }
     }}
 );
 
