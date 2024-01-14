@@ -3,13 +3,19 @@ import { getContext } from "svelte";
 
 /** @type String - title of the item */
 export let title;
+
+/** @type function - action invoked on selection */
+export let action;
+
 /** @type String - keyboard shortcut */
 export let shortcut = "";
 
 /** @type boolean - selection state */
 let selected = false;
+
 /** @type boolean - visibility state */
 let hidden = false;
+
 /** @type HTMLElement */
 let ref;
 
@@ -23,9 +29,12 @@ const registerStatus = getContext('command-menu-section').registerStatus;
  * Dispatches a custom event to notify {CommandMenu} component about selection change
  * @param {Event} event - The observable event
  */
-function dispatchEvent(event) {
+function onMousedown(event) {
     event.preventDefault();
     ref.dispatchEvent(new CustomEvent('itemselected', { detail: uuid, bubbles: true }));
+    
+    // call item's action if provided
+    if (action) action();
 }
 
 getContext('command-menu').registerItem(uuid, {
@@ -35,12 +44,15 @@ getContext('command-menu').registerItem(uuid, {
         hidden = isHidden;
     },
     matchesTitle: (/** @type String */  pattern) => title.toLowerCase().includes(pattern),
+    invokeAction: () => { if (action) action() },
     isHidden: () => hidden
 })
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div bind:this={ref} on:mousedown={dispatchEvent} class="px-1 {hidden ? 'hidden' : ''}">
+<div bind:this={ref}
+     on:mousedown={onMousedown}
+     class="px-1 {hidden ? 'hidden' : ''}">
     <div class="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-gray-900 {selected ? 'bg-neutral-100' : ''}" id="calendar-command-1">
         <span>
             <slot />

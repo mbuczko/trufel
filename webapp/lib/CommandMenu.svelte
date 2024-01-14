@@ -6,6 +6,7 @@ import { onMount, setContext } from 'svelte';
  * @property {function(boolean):void} toggleActive
  * @property {function(boolean):void} toggleHidden
  * @property {function(String):boolean} matchesTitle
+ * @property {function():void} invokeAction
  * @property {function():boolean} isHidden
  *
  * @typedef CommandMenuItemData
@@ -69,10 +70,10 @@ function onChange() {
     let f = -1;
     items.forEach((item, i) => {
         let matches = pattern.length === 0 || item.fns.matchesTitle(p);
-        
+
         item.fns.toggleActive(false);
         item.fns.toggleHidden(!matches);
-        
+
         // if there is any match, record first index and
         // make corresponding {CommandMenuItem} active.
         if (matches && (f < 0)) f = i;
@@ -90,18 +91,24 @@ function onChange() {
  * @listens KeyboardEvent
  */
 function onKeydown(event) {
-    if (currentItemIndex >=0 && currentItemIndex < items.length) {
-        items[currentItemIndex].fns.toggleActive(false)
-    }
-    if (event.key === 'ArrowDown') {
-        currentItemIndex = findNext(currentItemIndex);
-    } else if (event.key === 'ArrowUp') {
-        currentItemIndex = findPrev(currentItemIndex);
-    }
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault();
+    if (event.key === 'Enter') {
         if (currentItemIndex >= 0) {
-            items[currentItemIndex].fns.toggleActive(true)
+            items[currentItemIndex].fns.invokeAction();
+        }
+    } else {
+        if (currentItemIndex >=0 && currentItemIndex < items.length) {
+            items[currentItemIndex].fns.toggleActive(false)
+        }
+        if (event.key === 'ArrowDown') {
+            currentItemIndex = findNext(currentItemIndex);
+        } else if (event.key === 'ArrowUp') {
+            currentItemIndex = findPrev(currentItemIndex);
+        }
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            if (currentItemIndex >= 0) {
+                items[currentItemIndex].fns.toggleActive(true)
+            }
         }
     }
 }

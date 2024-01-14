@@ -5,7 +5,7 @@ import { writable } from "svelte/store";
 /** @type String */
 export let title;
 
-/** @type {import("svelte/store").Writable<{String, boolean}>} */
+/** @type {import("svelte/store").Writable<Object.<String, boolean>>} */
 const itemsStatuses = writable({});
 
 /** @type {Number} - Number of hidden items in a section */
@@ -16,9 +16,11 @@ itemsStatuses.subscribe((value) => {
 })
 
 setContext('command-menu-section', {
-    registerStatus: (uuid, status) => {
-        itemsStatuses.update((u) => { u[uuid] = status; return u; });
-    }
+    registerStatus: (
+        /** @type {string} */ uuid,
+        /** @type {boolean} */ status) => {
+            itemsStatuses.update((u) => { u[uuid] = status; return u; });
+        }
 })
 </script>
 
