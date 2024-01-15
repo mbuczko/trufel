@@ -33,11 +33,11 @@ let searchElement;
 let pattern = "";
 
 /**
- * Finds next non-hidden item starting from given {startIndex}
- * and returns its index or -1 if no item was found.
+ * Finds index of next non-hidden item starting from given {startIndex}.
  *
- * @param {Number} startIndex - an index to start looking from
- * @returns {Number} - an index of non-hidden command-menu item
+ * @param {Number} startIndex - an index to start looking from.
+ * @returns {Number} - an index of first found non-hidden command-menu,
+ * or -1 otherwise.
  */
 function findNext(startIndex) {
     for (let i=startIndex+1; i<items.length; i++) {
@@ -51,11 +51,11 @@ function findNext(startIndex) {
 }
 
 /**
- * Finds previous non-hidden item starting from given {startIndex}
- * and returns its index or -1 if no item was found.
+ * Finds index of previous non-hidden item starting from given {startIndex}.
  *
- * @param {Number} startIndex - an index to start looking from
- * @returns {Number} - an index of non-hidden command-menu item
+ * @param {Number} startIndex - an index to start looking from.
+ * @returns {Number} - an index of first found non-hidden command-menu,
+ * or -1 otherwise.
  */
 function findPrev(startIndex) {
     for (let i=startIndex-1; i>=0; i--) {

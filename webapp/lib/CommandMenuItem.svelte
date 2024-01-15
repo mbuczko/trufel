@@ -23,7 +23,13 @@ let ref;
  * A random ID to recognize the item by a parent section
  */
 const uuid = crypto.randomUUID();
-const registerStatus = getContext('command-menu-section').registerStatus;
+
+/**
+ * registerStatus function is called each time a {CommandMenu} input changes.
+ * This is required to force section to hide entirely when there was not even
+ * a single item matching provided pattern.
+ */
+const registerStatus = (getContext('command-menu-section') || {}).registerStatus;
 
 /**
  * Dispatches a custom event to notify {CommandMenu} component about selection change
@@ -40,7 +46,11 @@ function onMousedown(event) {
 getContext('command-menu').registerItem(uuid, {
     toggleActive: (/** @type boolean */ isActive) => selected = isActive,
     toggleHidden: (/** @type boolean */ isHidden) => {
-        registerStatus(uuid, isHidden)
+        // registerStatus function might not be provided if item
+        // is not wrapped into a section.
+        if (registerStatus) {
+            registerStatus(uuid, isHidden)
+        }
         hidden = isHidden;
     },
     matchesTitle: (/** @type String */  pattern) => title.toLowerCase().includes(pattern),
