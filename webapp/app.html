@@ -1,16 +1,19 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="description" content="Trufel - link collector" />
-		<script src="https://cdn.tailwindcss.com"></script>
-		%sveltekit.head%
-	</head>
-	<body
-		data-sveltekit-preload-data="hover"
-		class="min-h-screen bg-gradient-to-b from-slate-700 to-slate-800">
-		<div style="display: contents">%sveltekit.body%</div>
-	</body>
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%sveltekit.assets%/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Trufel - link collector" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    %sveltekit.head%
+</head>
+
+<body data-sveltekit-preload-data="hover" class="min-h-screen bg-gradient-to-b from-slate-700 to-slate-800">
+    <!-- Overlay element -->
+    <div id="overlay" class="fixed hidden z-40 w-screen h-screen inset-0 bg-gray-900 bg-opacity-60"></div>
+    <div style="display: contents">%sveltekit.body%</div>
+</body>
+
 </html>
