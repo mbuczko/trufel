@@ -1,0 +1,58 @@
+.dialog {
+  margin: 0 20%;
+
+  --dialog-border: 1px solid rgb(0, 0, 200, 0.5);
+  --dialog-label-color: rgb(30, 30, 30);
+  --dialog-button-radius: 3px;
+
+  label {
+    font-size: 0.8em;
+    color: var(--dialog-label-color);
+  }
+  input[type=text] {
+    margin-bottom: 8px;
+  }
+}
+
+
+input[type=text] {
+  border: var(--dialog-border);
+  border-radius: 3px;
+  padding: 4px;
+  width: 100%;
+}
+input[type=checkbox] {
+  width: 30px;
+}
+input[type=submit] {
+  background: #55f;
+  border: var(--dialog-border);
+  border-radius: 3px;
+  color: white;
+}
+input:hover {
+  border-color: rgb(0, 0, 200, 0.9);
+}
+
+.form-buttons {
+  grid-column: span 2;
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.form-buttons button {
+  background: white;
+  border: var(--dialog-border);
+  border-radius: var(--dialog-button-radius);
+}
+
+.form-buttons > * {
+  min-width: 100px;
+}
+
+.tabs button {
+  font-size: 0.8em;
+}
