@@ -170,8 +170,8 @@ onMount(() => {
     }
 })
 
-setContext('command-menu',
-    {registerItem: (
+setContext('command-menu', {
+    registerItem: (
         /** @type String */ id,
         /** @type CommandMenuItemFns */ fns
     ) => {
