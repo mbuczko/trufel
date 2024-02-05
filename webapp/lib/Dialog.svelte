@@ -28,7 +28,7 @@ let iconSearch = false;
     </div>
     <div class="details bg-white border-1 rounded-tr-lg rounded-br-lg p-4">
         {#if iconSearch}
-            <div class="">
+            <div>
                 <IconsGallery />
             </div>
         {:else}

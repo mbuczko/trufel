@@ -14,22 +14,24 @@
   }
 }
 
-
 input[type=text] {
   border: var(--dialog-border);
   border-radius: 3px;
   padding: 4px;
   width: 100%;
 }
+
 input[type=checkbox] {
   width: 30px;
 }
+
 input[type=submit] {
   background: #55f;
   border: var(--dialog-border);
   border-radius: 3px;
   color: white;
 }
+
 input:hover {
   border-color: rgb(0, 0, 200, 0.9);
 }
@@ -55,4 +57,5 @@ input:hover {
 
 .tabs button {
   font-size: 0.8em;
+  font-variant-caps: petite-caps;
 }
