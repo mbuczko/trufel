@@ -16,8 +16,6 @@ let ref;
 onMount(() => {
     registerTab(ref);
 })
-
-
 </script>
 
 <button id={id}         

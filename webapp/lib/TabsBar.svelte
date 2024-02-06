@@ -1,8 +1,8 @@
 <script>
 import { createEventDispatcher, onMount, setContext } from "svelte";
 
-/** @type {String | null} - currently selected tab Id */
-export let currentTabId;
+/** @type {String | null} - currently selected tab Id or null for no selection */
+export let currentTabId = null;
 
 /** @type {number} - number of added tabs */
 let tabsCount = 0;
@@ -12,7 +12,13 @@ let marker;
 
 const dispatch = createEventDispatcher();
 
-/** @param tab {HTMLElement | null} - tab to select */
+/**
+ * Selects a tab or removes existing selection if
+ * null was provided as a parameter.
+ *
+ * @param {HTMLElement | null} tab - tab to select
+ * @fires on:change event with Id of selected tab or null when deselecting
+ */
 function selectTab(tab) {
     if (tab && tab.id) {
         marker.style.width = tab.offsetWidth + 'px';
@@ -56,3 +62,4 @@ setContext('tabs', {
     </div>
     <slot />
 </div>
+
