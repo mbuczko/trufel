@@ -1,9 +1,9 @@
 <script>
 import Toggle from '$lib/Toggle.svelte';
-import IconsGallery from './IconsGallery.svelte';
+import IconsComposer from './IconComposer.svelte';
 
 /** @type {boolean} */
-let iconSearch = false;
+let iconComposer = false;
 
 </script>
 
@@ -11,7 +11,7 @@ let iconSearch = false;
     <div class="sidebar grid grid-cols-[64px_1fr] justify-items-start bg-slate-500 rounded-tl-lg rounded-bl-lg p-2">
         <button
             class="self-start icon w-14 h-14 border-2 border-rose-500"
-            on:click="{() => iconSearch = !iconSearch}" />
+            on:click="{() => iconComposer = !iconComposer}" />
         <div class="self-start pt-2 min-w-40">
             <h3 class="text-gray-800 font-medium uppercase"> Proxmox </h3>
             <div class="text-xs text-gray-700"> Clustered Virtual Machines </div>
@@ -27,8 +27,8 @@ let iconSearch = false;
         </div>
     </div>
     <div class="details relative flex-1 bg-white border-1 rounded-tr-lg rounded-br-lg p-4">
-        {#if iconSearch}
-            <IconsGallery />
+        {#if iconComposer}
+            <IconsComposer />
         {:else}
             <form>
                 <label for="url"> URL </label>

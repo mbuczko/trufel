@@ -7,7 +7,7 @@
 
 .dialog {
   margin: 0 auto;
-  
+
   label {
     font-size: 0.8em;
     color: var(--dialog-label-color);
@@ -33,6 +33,10 @@ input[type=submit] {
   border: var(--dialog-border);
   border-radius: var(--dialog-button-radius);
   color: white;
+
+  &:disabled {
+    opacity: 0.5;
+  }
 }
 
 input:hover,
@@ -53,6 +57,21 @@ input:focus {
   background: white;
   border: var(--dialog-border);
   border-radius: var(--dialog-button-radius);
+  padding: 0 10px;
+  color: #338;
+  opacity: 0.8;
+
+  &:hover {
+    border: var(--dialog-border-active);
+    opacity: 1;
+  }
+
+  svg {
+    height: 1.2em;
+    display: inline-block;
+    padding-bottom: 2px;
+    fill: rgb(0, 0, 200, 0.6);
+  }
 }
 
 .form-buttons > * {
