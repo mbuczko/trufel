@@ -44,7 +44,7 @@ $: onPatternChange(pattern);
  * @returns {Number} - an index of first found non-hidden command-menu,
  * or -1 otherwise.
  */
-function findNext(startIndex) {
+const findNext = (startIndex) => {
     for (let i=startIndex+1; i<items.length; i++) {
         if (!items[i].fns.isHidden()) return i;
     }
@@ -62,7 +62,7 @@ function findNext(startIndex) {
  * @returns {Number} - an index of first found non-hidden command-menu,
  * or -1 otherwise.
  */
-function findPrev(startIndex) {
+const findPrev = (startIndex) => {
     for (let i=startIndex-1; i>=0; i--) {
         if (!items[i].fns.isHidden()) return i;
     }
@@ -77,7 +77,7 @@ function findPrev(startIndex) {
  * Reacts on pattern change by hiding or showing matching items.
  * @param {String} pattern - a new {CommandMenu} pattern that items should match.
  */
-function onPatternChange(pattern) {
+const onPatternChange = (pattern) => {
     let p = (pattern || "").toLowerCase();
     let c = 0;
     let f = -1;
@@ -103,7 +103,7 @@ function onPatternChange(pattern) {
  * @param {KeyboardEvent} event - keydown event to react on up/down arrows.
  * @listens KeyboardEvent
  */
-function onKeydown(event) {
+const onKeydown = (event) => {
     if (event.key === 'Enter') {
         if (currentItemIndex >= 0) {
             items[currentItemIndex].fns.invokeAction();
@@ -131,7 +131,7 @@ function onKeydown(event) {
  * @param {CustomEvent} event - The observable event
  * @listens itemselected
  */
-function onItemSelected(event) {
+const onItemSelected = (event) => {
     items.forEach((item, i) => {
         let selected = item.id === event.detail;
         item.fns.toggleActive(selected);
@@ -140,7 +140,7 @@ function onItemSelected(event) {
     searchElement.focus()
 }
 
-function openMenu() {
+const openMenu = () => {
     pattern = "";
     if (ref) {
         ref.classList.remove('hidden');
@@ -148,7 +148,7 @@ function openMenu() {
     }
 }
 
-function closeMenu() {
+const closeMenu = () => {
     ref && ref.classList.add('hidden');
 }
 

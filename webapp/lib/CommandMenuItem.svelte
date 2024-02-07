@@ -35,7 +35,7 @@ const registerStatus = (getContext('command-menu-section') || {}).registerStatus
  * Dispatches a custom event to notify {CommandMenu} component about selection change
  * @param {Event} event - The observable event
  */
-function onMousedown(event) {
+const onMousedown = (event) => {
     event.preventDefault();
     ref.dispatchEvent(new CustomEvent('itemselected', { detail: uuid, bubbles: true }));
     

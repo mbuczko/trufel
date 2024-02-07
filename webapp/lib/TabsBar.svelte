@@ -19,7 +19,7 @@ const dispatch = createEventDispatcher();
  * @param {HTMLElement | null} tab - tab to select
  * @fires on:change event with Id of selected tab or null when deselecting
  */
-function selectTab(tab) {
+const selectTab = (tab) => {
     if (tab && tab.id) {
         marker.style.width = tab.offsetWidth + 'px';
         marker.style.height = tab.offsetHeight + 'px';
