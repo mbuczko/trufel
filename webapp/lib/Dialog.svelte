@@ -13,8 +13,8 @@ let svgIcon = '';
 <div class="dialog w-full flex min-w-[500px] min-h-[270px] max-w-screen-md max-h-[270px] shadow-md border-1">
     <div class="sidebar grid grid-cols-[64px_1fr] justify-items-start bg-slate-500 rounded-tl-lg rounded-bl-lg p-2">
         <button
-            class="self-start icon w-14 h-14 border-2 border-slate-600 opacity-80 rounded-lg shadow-md active:shadow-none hover:opacity-100"
-            on:click="{() => iconComposer = !iconComposer}">
+            class="self-start icon w-14 h-14 border-2 border-slate-700 opacity-80 rounded-lg shadow-md active:shadow-none hover:opacity-100"
+            on:click="{() => iconComposer = true}">
             {@html svgIcon}
         </button>
         <div class="self-start pt-2 min-w-40">
