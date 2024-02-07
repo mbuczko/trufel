@@ -7,7 +7,7 @@ let iconSearch = false;
 
 </script>
 
-<div class="dialog flex min-w-80 max-w-screen-md shadow-md border-1">
+<div class="dialog w-full flex min-w-[500px] min-h-[270px] max-w-screen-md max-h-[270px] shadow-md border-1">
     <div class="sidebar grid grid-cols-[64px_1fr] justify-items-start bg-slate-500 rounded-tl-lg rounded-bl-lg p-2">
         <button
             class="self-start icon w-14 h-14 border-2 border-rose-500"
@@ -26,11 +26,9 @@ let iconSearch = false;
             <Toggle id="disabled" label="Disabled" enabled={false} />
         </div>
     </div>
-    <div class="details bg-white border-1 rounded-tr-lg rounded-br-lg p-4">
+    <div class="details relative flex-1 bg-white border-1 rounded-tr-lg rounded-br-lg p-4">
         {#if iconSearch}
-            <div>
-                <IconsGallery />
-            </div>
+            <IconsGallery />
         {:else}
             <form>
                 <label for="url"> URL </label>
@@ -55,9 +53,5 @@ let iconSearch = false;
 <style>
  .sidebar :last-child {
      margin-bottom: 40px;
- }
- .details {
-     min-width: 410px;
-     min-height: 270px;
  }
 </style>

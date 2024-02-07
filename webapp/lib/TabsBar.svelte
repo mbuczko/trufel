@@ -52,7 +52,6 @@ setContext('tabs', {
         selectTab(tab);
     }
 })
-
 </script>
 
 <div class="tabs relative inline-grid items-center justify-center w-full h-10 grid-cols-{tabsCount} p-1 text-gray-500 bg-gray-100 rounded-lg select-none">

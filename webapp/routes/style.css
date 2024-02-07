@@ -1,10 +1,13 @@
-.dialog {
-  margin: 0 20%;
-
+:root {
   --dialog-border: 1px solid rgb(0, 0, 200, 0.5);
+  --dialog-border-active: 1px solid rgb(0, 0, 200, 0.9);
   --dialog-label-color: rgb(30, 30, 30);
   --dialog-button-radius: 3px;
+}
 
+.dialog {
+  margin: 0 auto;
+  
   label {
     font-size: 0.8em;
     color: var(--dialog-label-color);
@@ -16,7 +19,7 @@
 
 input[type=text] {
   border: var(--dialog-border);
-  border-radius: 3px;
+  border-radius: var(--dialog-button-radius);
   padding: 4px;
   width: 100%;
 }
@@ -28,12 +31,13 @@ input[type=checkbox] {
 input[type=submit] {
   background: #55f;
   border: var(--dialog-border);
-  border-radius: 3px;
+  border-radius: var(--dialog-button-radius);
   color: white;
 }
 
-input:hover {
-  border-color: rgb(0, 0, 200, 0.9);
+input:hover,
+input:focus {
+  border: var(--dialog-border-active);
 }
 
 .form-buttons {
