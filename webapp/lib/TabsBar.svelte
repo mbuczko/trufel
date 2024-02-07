@@ -61,4 +61,3 @@ setContext('tabs', {
     </div>
     <slot />
 </div>
-

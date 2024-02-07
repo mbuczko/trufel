@@ -76,17 +76,17 @@ const intoSvg = (svg) => {
  .icon-composer textarea {
      border: var(--dialog-border);
      border-radius: var(--dialog-button-radius);
-     min-width: 320px;
+     min-width: 330px;
      max-width: 380px;
      resize: horizontal;
      font-size: 0.7em;
-     color: #666;
+     color: gray;
  }
  .icon-composer .form-buttons {
-     margin: 8px 15px;
      position: absolute;
-     bottom: 6px;
+     bottom: 12px;
      right: 0;
+     margin: 8px 15px;
      width: 100%;
  }
  .icon-preview {
