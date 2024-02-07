@@ -4,7 +4,7 @@
   --dialog-border: 1px solid var(--dialog-border-color);
   --dialog-border-active: 1px solid var(--dialog-border-color-active);
   --dialog-button-submit-background: rgb(45, 45, 255);
-  --dialog-button-active-shadow-color: rgb(100, 100, 255);
+  --dialog-button-active-shadow-color: rgb(150, 150, 255);
   --dialog-button-radius: 3px;
   --dialog-label-color: rgb(30, 30, 30);
 }
@@ -32,6 +32,7 @@ input[type=submit] {
   background: var(--dialog-button-submit-background);
   border: var(--dialog-border);
   border-radius: var(--dialog-button-radius);
+  box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
   color: white;
   padding: 0 10px;
 
@@ -39,7 +40,7 @@ input[type=submit] {
     opacity: 0.5;
   }
   &:active {
-    box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
+    box-shadow: none;
   }
 }
 
@@ -64,13 +65,14 @@ input:focus {
   color: var(--dialog-border-color-active);
   padding: 0 10px;
   opacity: 0.9;
+  box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
 
   &:hover {
     border: var(--dialog-border-active);
     opacity: 1;
   }
   &:active {
-    box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
+    box-shadow: none;
   }
 
   svg {

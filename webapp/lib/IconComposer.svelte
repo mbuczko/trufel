@@ -1,11 +1,14 @@
 <script>
+import { createEventDispatcher } from "svelte";
 import Banner from "./Banner.svelte";
+
+const dispatch = createEventDispatcher();
 
 /** @type {String} - default "error" icon */
 const error = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>alert-circle-outline</title><path d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z" /></svg>';
 
 /** @type {String} - SVG icon definition */
-let svg = '';
+export let svg = '';
 
 /** @type {number | undefined} */
 let timer;
@@ -15,20 +18,18 @@ let isValidSvg;
 
 /**
  * Debounces textarea input events.
- * 
+ *
  * @param {KeyboardEvent & { currentTarget: EventTarget & HTMLTextAreaElement }} event - a keyboard event to debounce
  */
 const debounce = (event) => {
     let text = (event.target && event.currentTarget.value) || '';
     clearTimeout(timer);
-    timer = setTimeout(() => {
-        svg = text;
-    }, 500);
+    timer = setTimeout(() => { svg = text }, 500);
 }
 
 /**
  * Parses SVG to be sure it's a valid svg+xml image definition.
- * 
+ *
  * @param {String | null} svg - SVG definition to parse.
  * @returns validated svg as a text or null if validation failed.
  */
@@ -50,20 +51,27 @@ const intoSvg = (svg) => {
     <Banner style="rounded-tr-lg" closable={false} />
     <div class="w-full flex gap-4 mt-10">
         <div class="flex-1">
-            <textarea on:keyup={(e) => debounce(e)}
+            <textarea value={svg}
                       class="h-full p-1"
-                      placeholder="Your SVG icon as 'image/svg+xml' string..."/>
+                      placeholder="Your SVG icon as 'image/svg+xml' string..."
+                      on:keyup={(e) => debounce(e)}/>
         </div>
         <div class="icon-preview w-full h-full">
             {@html (intoSvg(svg) || error)}
         </div>
     </div>
     <div class="form-buttons">
-        <button>
+        <button on:click={() => dispatch('close')}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left</title><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
             Back to details
         </button>
-        <input name="submit" type="submit" value={isValidSvg ? 'Use icon' : 'Oops, invalid icon' } class="submit-button" disabled={!isValidSvg}/>
+        <input
+            name="submit"
+            type="submit"
+            value={isValidSvg ? 'Use icon' : 'Oops, invalid icon' }
+            class="submit-button"
+            disabled={!isValidSvg}
+            on:click={() => dispatch('apply', {svg: svg})}/>
     </div>
 </div>
 
