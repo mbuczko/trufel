@@ -11,7 +11,7 @@ let svg = '';
 let timer;
 
 /** @type {boolean | undefined} */
-let isCorrectSvg;
+let isValidSvg;
 
 /**
  * Debounces textarea input events.
@@ -36,15 +36,13 @@ const intoSvg = (svg) => {
     let parsed = svg && new DOMParser().parseFromString(svg, "image/svg+xml");
     if (parsed) {
         let child = parsed.firstChild;
-        if (!child || child.nodeName !== 'svg') {
-            isCorrectSvg = false;
-            return;
-        } else {
-            isCorrectSvg = true;
+        if (child && child.nodeName === 'svg') {
+            isValidSvg = true;
             /** @ts-ignore */
             return child.outerHTML;
         }
     }
+    isValidSvg = false;
 }
 </script>
 
@@ -65,7 +63,7 @@ const intoSvg = (svg) => {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>arrow-left</title><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
             Back to details
         </button>
-        <input name="submit" type="submit" value={isCorrectSvg ? 'Use icon' : 'Invalid icon' } class="submit-button" disabled={!isCorrectSvg}/>
+        <input name="submit" type="submit" value={isValidSvg ? 'Use icon' : 'Oops, invalid icon' } class="submit-button" disabled={!isValidSvg}/>
     </div>
 </div>
 
@@ -88,6 +86,9 @@ const intoSvg = (svg) => {
      right: 0;
      margin: 8px 15px;
      width: 100%;
+ }
+ .icon-composer input[type=submit] {
+     min-width: 154px;
  }
  .icon-preview {
      background-image: repeating-conic-gradient(hsl(var(--light-grey)) 0 25%,transparent 0 50%);
