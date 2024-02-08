@@ -1,7 +1,7 @@
 <script>
 import { createEventDispatcher, onMount, setContext } from "svelte";
 
-/** @type {String | null} - currently selected tab Id or null for no selection */
+/** @type {string | null} - currently selected tab Id or null for no selection */
 export let currentTabId = null;
 
 /** @type {number} - number of added tabs */

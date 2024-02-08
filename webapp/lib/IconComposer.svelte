@@ -4,10 +4,10 @@ import Banner from "./Banner.svelte";
 
 const dispatch = createEventDispatcher();
 
-/** @type {String} - default "error" icon */
+/** @type {string} - default "error" icon */
 const error = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>alert-circle-outline</title><path d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z" /></svg>';
 
-/** @type {String} - SVG icon definition */
+/** @type {string} - SVG icon definition */
 export let svg = '';
 
 /** @type {number | undefined} */
@@ -30,7 +30,7 @@ const debounce = (event) => {
 /**
  * Parses SVG to be sure it's a valid svg+xml image definition.
  *
- * @param {String | null} svg - SVG definition to parse.
+ * @param {string | null} svg - SVG definition to parse.
  * @returns validated svg as a text or null if validation failed.
  */
 const intoSvg = (svg) => {
@@ -68,7 +68,7 @@ const intoSvg = (svg) => {
         <input
             name="submit"
             type="submit"
-            value={isValidSvg ? 'Use icon' : 'Oops, invalid icon' }
+            value={isValidSvg ? 'Apply icon' : 'Oops, invalid icon' }
             class="submit-button"
             disabled={!isValidSvg}
             on:click={() => dispatch('apply', {svg: svg})}/>

@@ -1,10 +1,10 @@
 <script>
 import { getContext, onMount } from 'svelte';
 
-/** @type {String} */
+/** @type {string} */
 export let id;
 
-/** @type {String} */
+/** @type {string} */
 export let label;
 
 /** Notifies a parent about being selected */

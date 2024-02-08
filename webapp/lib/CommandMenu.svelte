@@ -13,7 +13,7 @@ export let maxVisible = 6;
  * @property {function():boolean} isHidden
  *
  * @typedef CommandMenuItemData
- * @property {String} id - a unique item identifier
+ * @property {string} id - a unique item identifier
  * @property {CommandMenuItemFns} fns - a functitons to manipulate with item
  */
 
@@ -75,7 +75,7 @@ const findPrev = (startIndex) => {
 
 /**
  * Reacts on pattern change by hiding or showing matching items.
- * @param {String} pattern - a new {CommandMenu} pattern that items should match.
+ * @param {string} pattern - a new {CommandMenu} pattern that items should match.
  */
 const onPatternChange = (pattern) => {
     let p = (pattern || "").toLowerCase();
