@@ -36,8 +36,8 @@ let isDisabled;
             {@html svgIcon}
         </button>
         <div class="self-start pt-2 min-w-40">
-            <h3 class="text-gray-800 font-medium uppercase"> {title || '---'} </h3>
-            <div class="text-xs text-gray-700"> {description || 'No description'} </div>
+            <h3 class="title text-gray-800 font-medium uppercase"> {title || '---'} </h3>
+            <div class="description text-xs text-gray-700"> {description || 'No description'} </div>
         </div>
         <div class="col-span-2 text-left">
             <Toggle id="shared" label="Shared with others" enabled={isShared} />
@@ -64,10 +64,10 @@ let isDisabled;
                     <input bind:value={url} name="url" id="url" type="text"/>
 
                     <label for="title"> Title </label>
-                    <input bind:value={title} name="title" id="title" type="text"/>
+                    <input bind:value={title} name="title" id="title" type="text" maxlength="64"/>
 
                     <label for="description"> Description </label>
-                    <input bind:value={description} name="description" id="description" type="text"/>
+                    <input bind:value={description} name="description" id="description" type="text" maxlength="64" />
 
                     <div class="form-buttons">
                         <button> Cancel </button>
