@@ -73,7 +73,7 @@ onMount(() => {
                 <form class="grid grid-cols-[1fr_1fr] gap-2">
                     <div class="col-span-2">
                         <label for="url"> URL </label>
-                        <input bind:value={url} bind:this={defaultInput} name="url" id="url" type="text"/>
+                        <input bind:value={url} bind:this={defaultInput} name="url" id="url" type="text" class="text-sm" />
                     </div>
                     <div>
                         <label for="type"> Type </label>
@@ -85,11 +85,11 @@ onMount(() => {
                     </div>                    
                     <div>
                         <label for="title"> Title </label>
-                        <input bind:value={title} name="title" id="title" type="text" maxlength="64"/>
+                        <input bind:value={title} name="title" id="title" class="text-sm" type="text" maxlength="64"/>
                     </div>
                     <div>
                         <label for="description"> Description </label>
-                        <input bind:value={description} name="description" id="description" type="text" maxlength="64" />
+                        <input bind:value={description} name="description" id="description" class="text-sm" type="text" maxlength="64" />
                     </div>
 
                     <div class="form-buttons col-span-2">
