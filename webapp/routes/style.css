@@ -9,25 +9,6 @@
   --dialog-label-color: rgb(30, 30, 30);
 }
 
-.dialog {
-  margin: 0 auto;
-
-  label {
-    font-size: 0.8em;
-    color: var(--dialog-label-color);
-  }
-  input[type=text] {
-    margin-bottom: 8px;
-  }
-  .title,
-  .description {
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
-    max-width: 160px;
-  }
-}
-
 input[type=text] {
   border: var(--dialog-border);
   border-radius: var(--dialog-button-radius);
@@ -54,6 +35,21 @@ input[type=submit] {
 input:hover,
 input:focus {
   border: var(--dialog-border-active);
+}
+
+.create-dialog {
+  label {
+    font-size: 0.8em;
+    color: var(--dialog-label-color);
+  }
+
+  .title,
+  .description {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 160px;
+  }
 }
 
 .form-buttons {

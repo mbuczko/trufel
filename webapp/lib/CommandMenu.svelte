@@ -180,23 +180,22 @@ setContext('command-menu', {
         if (itemsRegistered > maxVisible) {
             fns.toggleHidden(true);
         }
-    }}
+}}
 );
 
 </script>
 
 
-<div bind:this={ref}
-     id="command-menu"
-     class="hidden flex flex-col w-full h-full overflow-hidden bg-white border rounded-lg shadow-md">
+<div id="command-menu"
+     class="hidden flex flex-col w-full h-full overflow-hidden bg-white border rounded-lg shadow-md"
+     bind:this={ref}>
     <div class="flex items-center px-3 border-b">
         <svg class="w-4 h-4 mr-0 text-neutral-400 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-darkreader-inline-stroke="" style="--darkreader-inline-stroke: currentColor;"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
-        <!-- svelte-ignore a11y-autofocus -->
         <input
             bind:this={searchElement}
             bind:value={pattern}
             on:keydown={onKeydown}
-            type="text" class="flex w-full px-2 py-3 text-sm bg-transparent border-0 rounded-md outline-none focus:outline-none focus:ring-0 focus:border-0 placeholder:text-neutral-400 h-11 disabled:cursor-not-allowed disabled:opacity-50" placeholder="Type a command or search..." autocomplete="off" autocorrect="off" spellcheck="false">
+            type="text" class="flex w-full px-2 py-3 text-sm bg-transparent border-0 rounded-md outline-none focus:outline-none focus:ring-0 focus:border-0 placeholder:text-neutral-400 h-11 disabled:cursor-not-allowed disabled:opacity-50" placeholder="Type a command or search..." autocomplete="off" autocorrect="off" spellcheck="false"/>
     </div>
     <div class="max-h-[320px] overflow-y-auto overflow-x-hidden">
         <slot />
