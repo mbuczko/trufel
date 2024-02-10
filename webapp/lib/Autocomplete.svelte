@@ -14,7 +14,7 @@ export let items = [
     }
 ]
 
-/** @type {HTMLElement} */
+/** @type {HTMLInputElement} */
 let ref;
 
 /** @type {HTMLElement} */
@@ -29,7 +29,17 @@ const onFocus = () => {
     popup.style.top = ref.offsetTop + ref.offsetHeight - 2 + 'px';
     popup.style.display = 'block';
 }
+
 const onFocusOut = () => {
+    popup.style.display = 'none';
+}
+
+/**
+ * Called on item selection.
+ * @param {any} item
+ */
+const onSelect = (item) => {
+    ref.value = item.label;
     popup.style.display = 'none';
 }
 </script>
@@ -44,13 +54,17 @@ const onFocusOut = () => {
         spellcheck="false"
         bind:value={pattern}
         bind:this={ref}
+        on:mousedown={onFocus}
         on:focus={onFocus}
         on:focusout={onFocusOut}/>
     <ul class="absolute hidden w-full p-1 overflow-auto text-sm bg-white max-h-56 focus:outline-none"
         bind:this={popup}>
-        {#each items as {id, label, icon}}
+        {#each items as {id, label, icon}, idx}
             {#if pattern.length === 0 || label.toLowerCase().includes(pattern.toLowerCase())}
-                <li class="flex gap-1 items-center min-h-[30px] border-1">
+                <li class="flex gap-1 items-center min-h-[30px] border-1"
+                    data-item-id={id}
+                    on:mousedown={() => onSelect(items[idx])}
+                    on:mouseup={() => onSelect(items[idx])}>
                     {@html icon}
                     <span>{label}</span>
                 </li>

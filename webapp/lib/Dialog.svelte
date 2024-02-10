@@ -55,10 +55,8 @@ onMount(() => {
                 <h3 class="title text-gray-800 font-medium uppercase"> {title || '---'} </h3>
                 <div class="description text-xs text-gray-700"> {description || 'No description'} </div>
             </div>
-            <div class="col-span-2 text-left">
+            <div class="mt-14 col-span-2">
                 <Toggle id="shared" label="Shared with others" hint="Other users can see this too" enabled={isShared} />
-            </div>
-            <div class="col-span-2 text-left">
                 <Toggle id="searchable" label="Intrinsic search" hint="Enables search within the app" enabled={isSearchable} />
             </div>
         </div>
@@ -82,7 +80,7 @@ onMount(() => {
                     <div>
                         <label for="category"> Category </label>
                         <Autocomplete placeholder="Choose category..." />
-                    </div>                    
+                    </div>
                     <div>
                         <label for="title"> Title </label>
                         <input bind:value={title} name="title" id="title" class="text-sm" type="text" maxlength="64"/>
