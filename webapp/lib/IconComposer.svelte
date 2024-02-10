@@ -47,7 +47,7 @@ const intoSvg = (svg) => {
 }
 </script>
 
-<div class="icon-composer min-h-[180px]">
+<div class="icon-composer">
     <Banner style="rounded-tr-lg" closable={false}>
         <span slot="title">
             <svg class="w-4 h-4 mr-1 inline-block" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -62,7 +62,7 @@ const intoSvg = (svg) => {
             Head over to <a href="https://pictogrammers.com/library/mdi" target="_blank">pictogrammers.com</a> for some inspiration!
         </span>
     </Banner>
-    <div class="w-full flex gap-3 mt-10">
+    <div class="w-full flex gap-3 my-11">
         <div class="flex-1">
             <textarea value={svg}
                       class="h-full p-1"
