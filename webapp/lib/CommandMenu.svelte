@@ -20,10 +20,10 @@ export let maxVisible = 6;
 /** @type {CommandMenuItemData[]} */
 const items = [];
 
-/** @type Number */
-let currentItemIndex = -1;
+/** @type {number} */
+let selectedItemIdx = -1;
 
-/** @type Number */
+/** @type {number} */
 let itemsRegistered = 0;
 
 /** @type HTMLElement */
@@ -58,8 +58,8 @@ const findNext = (startIndex) => {
 /**
  * Finds index of previous non-hidden item starting from given {startIndex}.
  *
- * @param {Number} startIndex - an index to start looking from.
- * @returns {Number} - an index of first found non-hidden command-menu,
+ * @param {number} startIndex - an index to start looking from.
+ * @returns {number} - an index of first found non-hidden command-menu,
  * or -1 otherwise.
  */
 const findPrev = (startIndex) => {
@@ -75,7 +75,7 @@ const findPrev = (startIndex) => {
 
 /**
  * Reacts on pattern change by hiding or showing matching items.
- * @param {string} pattern - a new {CommandMenu} pattern that items should match.
+ * @param {string} pattern - a new pattern that items should match.
  */
 const onPatternChange = (pattern) => {
     let p = (pattern || "").toLowerCase();
@@ -93,9 +93,9 @@ const onPatternChange = (pattern) => {
     })
     if (f >= 0) {
         items[f].fns.toggleActive(true);
-        currentItemIndex = f;
+        selectedItemIdx = f;
     } else {
-        currentItemIndex = -1;
+        selectedItemIdx = -1;
     }
 }
 
@@ -105,22 +105,22 @@ const onPatternChange = (pattern) => {
  */
 const onKeydown = (event) => {
     if (event.key === 'Enter') {
-        if (currentItemIndex >= 0) {
-            items[currentItemIndex].fns.invokeAction();
+        if (selectedItemIdx >= 0) {
+            items[selectedItemIdx].fns.invokeAction();
         }
     } else {
-        if (currentItemIndex >=0 && currentItemIndex < items.length) {
-            items[currentItemIndex].fns.toggleActive(false)
+        if (selectedItemIdx >=0 && selectedItemIdx < items.length) {
+            items[selectedItemIdx].fns.toggleActive(false)
         }
         if (event.key === 'ArrowDown') {
-            currentItemIndex = findNext(currentItemIndex);
+            selectedItemIdx = findNext(selectedItemIdx);
         } else if (event.key === 'ArrowUp') {
-            currentItemIndex = findPrev(currentItemIndex);
+            selectedItemIdx = findPrev(selectedItemIdx);
         }
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault();
-            if (currentItemIndex >= 0) {
-                items[currentItemIndex].fns.toggleActive(true)
+            if (selectedItemIdx >= 0) {
+                items[selectedItemIdx].fns.toggleActive(true)
             }
         }
     }
@@ -135,7 +135,7 @@ const onItemSelected = (event) => {
     items.forEach((item, i) => {
         let selected = item.id === event.detail;
         item.fns.toggleActive(selected);
-        if (selected) currentItemIndex = i;
+        if (selected) selectedItemIdx = i;
     })
     searchElement.focus()
 }
