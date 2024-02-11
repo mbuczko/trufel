@@ -1,5 +1,4 @@
 <script>
-import { onMount } from 'svelte';
 import Toggle from './Toggle.svelte';
 import IconsComposer from './IconComposer.svelte';
 import Autocomplete from './Autocomplete.svelte';
@@ -31,14 +30,10 @@ let isShared;
 /** @type {boolean} */
 let isSearchable;
 
-/** @type {boolean} */
-let isDisabled;
-
-onMount(() => {
-    // ref.showModal();
-    // defaultInput.focus();
-
-})
+export const openDialog = () => {
+    ref.showModal();
+    defaultInput.focus()
+}
 </script>
 
 <dialog id="dialog"
@@ -48,7 +43,7 @@ onMount(() => {
         <div class="sidebar p-2 grid grid-cols-[64px_1fr] justify-items-start">
             <button
                 class="self-start icon w-14 h-14 mb-4 border-2 border-slate-700 opacity-80 rounded-lg shadow-md active:shadow-none hover:opacity-100"
-                on:click="{() => iconComposer = true}">
+                on:click={() => iconComposer = true}>
                 {@html svgIcon}
             </button>
             <div class="self-start pt-2 min-w-40">

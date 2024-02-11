@@ -1,6 +1,11 @@
 <script>
 import { onMount, setContext } from 'svelte';
+import { scale } from 'svelte/transition';
+import { backInOut } from 'svelte/easing';
 import { writable } from 'svelte/store';
+
+/** @type {boolean} */
+let active = false;
 
 /**
  * @typedef CommandMenuItem
@@ -13,9 +18,6 @@ const items = [];
 
 /** @type HTMLElement */
 let searchElement;
-
-/** @type HTMLElement */
-let ref;
 
 /** @type import('svelte/store').Writable<number> */
 const selectedItemIdx = writable(0);
@@ -62,6 +64,7 @@ function selectItem(startIdx, pattern, f=(n)=>n) {
  */
 const onKeydown = (event) => {
     if (event.key === 'Enter') {
+        event.preventDefault();
         onItemInvoked(new CustomEvent('iteminvoked', {
             detail: {index: $selectedItemIdx}
         }))
@@ -103,32 +106,33 @@ const onItemInvoked = ({detail: {index}}) => {
 }
 
 const openCommandMenu = () => {
-    if (ref) {
-        ref.classList.remove('hidden');
-        searchElement.focus();
-    }
+    items.length = 0;
+    active = true;
+    
+    // reset state values
+    $selectedItemIdx = 0;
+    $pattern = '';
 }
 
 const closeCommandMenu = () => {
-    ref && ref.classList.add('hidden');
+    active = false;
 }
 
 onMount(() => {
-    const bodyEl = document.querySelector('body');
-
-    if (bodyEl) {
-        bodyEl.addEventListener('keydown', (event) => {
+    const body = document.querySelector('body');
+    if (body) {
+        // @ts-ignore
+        body.addEventListener('itemselected', onItemSelected);
+        // @ts-ignore
+        body.addEventListener('iteminvoked', onItemInvoked);
+            
+        body.addEventListener('keydown', (event) => {
             if (event.metaKey && event.key === 'k') {
                 openCommandMenu();
             } else if (event.key === 'Escape') {
                 closeCommandMenu();
             }
         })
-        // @ts-ignore
-        ref.addEventListener('itemselected', onItemSelected);
-        // @ts-ignore
-        ref.addEventListener('iteminvoked', onItemInvoked);
-
     }
 })
 
@@ -143,10 +147,10 @@ setContext('command-menu-register', (/** @type {CommandMenuItem} */ item) => {
 });
 </script>
 
-
-<div id="command-menu"
-     class="hidden flex flex-col w-full h-full overflow-hidden bg-white border rounded-lg shadow-md"
-     bind:this={ref}>
+{#if active}
+<div class=" flex flex-col w-full h-full overflow-hidden bg-white border rounded-lg shadow-md"
+     transition:scale={{ duration: 150, start: 0.9, easing: backInOut }}
+     on:introstart={() => searchElement.focus()}>
     <div class="flex items-center px-3 border-b">
         <svg class="w-4 h-4 mr-0 text-neutral-400 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-darkreader-inline-stroke="" style="--darkreader-inline-stroke: currentColor;"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
         <input
@@ -160,7 +164,8 @@ setContext('command-menu-register', (/** @type {CommandMenuItem} */ item) => {
             bind:value={$pattern}
             on:keydown={onKeydown}/>
     </div>
-    <div class="max-h-[320px] overflow-y-auto overflow-x-hidden">
+    <div class="max-h-[320px] overflow-y-auto overflow-x-hidden py-2">
         <slot />
     </div>
 </div>
+{/if}

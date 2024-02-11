@@ -9,32 +9,34 @@
   --dialog-label-color: rgb(30, 30, 30);
 }
 
-input[type=text] {
-  border: var(--dialog-border);
-  border-radius: var(--dialog-button-radius);
-  padding: 4px;
-  width: 100%;
-}
-
-input[type=submit] {
-  background: var(--dialog-button-submit-background);
-  border: var(--dialog-border);
-  border-radius: var(--dialog-button-radius);
-  box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
-  color: white;
-  padding: 0 10px;
-
-  &:disabled {
-    opacity: 0.5;
+dialog {
+  input[type=text] {
+    border: var(--dialog-border);
+    border-radius: var(--dialog-button-radius);
+    padding: 4px;
+    width: 100%;
   }
-  &:active {
-    box-shadow: none;
-  }
-}
 
-input:hover,
-input:focus {
-  border: var(--dialog-border-active);
+  input[type=submit] {
+    background: var(--dialog-button-submit-background);
+    border: var(--dialog-border);
+    border-radius: var(--dialog-button-radius);
+    box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
+    color: white;
+    padding: 0 10px;
+
+    &:disabled {
+      opacity: 0.5;
+    }
+    &:active {
+      box-shadow: none;
+    }
+  }
+
+  input:hover,
+  input:focus {
+    border: var(--dialog-border-active);
+  }
 }
 
 .create-dialog {
