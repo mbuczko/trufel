@@ -4,65 +4,57 @@ import { getContext } from "svelte";
 /** @type String - title of the item */
 export let title;
 
-/** @type function - action invoked on selection */
+/** @type function - action to invoke on selection */
 export let action;
 
 /** @type String - keyboard shortcut */
-export let shortcut = "";
-
-/** @type boolean - selection state */
-let selected = false;
-
-/** @type boolean - visibility state */
-let hidden = false;
+export let shortcut = '';
 
 /** @type HTMLElement */
 let ref;
 
 /**
- * A random ID to recognize the item by a parent section
+ * Returns true if title matches given pattern. Returns false otherwise.
+ * @param {string} pattern - a pattern to match against
  */
-const uuid = crypto.randomUUID();
+const contains = (pattern) => (pattern === '') || title.toLowerCase().includes(pattern);
 
-/**
- * registerStatus function is called each time a {CommandMenu} input changes.
- * This is required to force section to hide entirely when there was not even
- * a single item matching provided pattern.
- */
-const registerStatus = (getContext('command-menu-section') || {}).registerStatus;
+const register = getContext('command-menu-register');
+const {pattern, selectedItemIdx} = getContext('command-menu-state');
+const {index} = register({
+    onMatch: contains,
+    onSelect: action
+});
+
+/** Reacts on selection index change and marks itself as selected if necessary */
+$: selected = $selectedItemIdx === index;
 
 /**
  * Dispatches a custom event to notify {CommandMenu} component about selection change
  * @param {Event} event - The observable event
  */
-const onMousedown = (event) => {
+const onItemSelected = (event) => {
     event.preventDefault();
-    ref.dispatchEvent(new CustomEvent('itemselected', { detail: uuid, bubbles: true }));
-    
-    // call item's action if provided
-    if (action) action();
+    ref.dispatchEvent(new CustomEvent('itemselected', { detail: {index}, bubbles: true }));
 }
 
-getContext('command-menu').registerItem(uuid, {
-    toggleActive: (/** @type boolean */ isActive) => selected = isActive,
-    toggleHidden: (/** @type boolean */ isHidden) => {
-        // registerStatus function might not be provided if item
-        // is not wrapped into a section.
-        if (registerStatus) {
-            registerStatus(uuid, isHidden)
-        }
-        hidden = isHidden;
-    },
-    matchesTitle: (/** @type String */  pattern) => title.toLowerCase().includes(pattern),
-    invokeAction: () => { if (action) action() },
-    isHidden: () => hidden
-})
+/**
+ * Dispatches a custom event to notify {CommandMenu} component about item being invoked
+ * @param {Event} event - The observable event
+ */
+const onItemInvoked = (event) => {
+    event.preventDefault();
+    ref.dispatchEvent(new CustomEvent('iteminvoked', { detail: {index}, bubbles: true }));
+}
+
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
+{#if contains($pattern)}
 <div bind:this={ref}
-     on:mousedown={onMousedown}
-     class="px-1 {hidden ? 'hidden' : ''}">
+     on:mousedown={onItemSelected}
+     on:mouseup={onItemInvoked}
+     class="command-item px-1">
     <div class="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-gray-900 {selected ? 'bg-neutral-100' : ''}" id="calendar-command-1">
         <span>
             <slot />
@@ -73,3 +65,4 @@ getContext('command-menu').registerItem(uuid, {
         {/if}
     </div>
 </div>
+{/if}

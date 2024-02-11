@@ -45,7 +45,7 @@ $: filteredItems = filter(items, pattern);
 
 /**
  * Filters input items (on label) agains given pattern.
- * 
+ *
  * @param {Item[]} items - items to filter
  * @param {string} pattern - pattern to apply on each item
  */
@@ -76,27 +76,22 @@ const onKeydown = (event) => {
         if (selectedItemIdx >= 0) {
             onSelect(filteredItems[selectedItemIdx])
         }
-    } else {
-        if (event.key === 'ArrowDown') {
-            selectedItemIdx++;
-        } else if (event.key === 'ArrowUp') {
-            selectedItemIdx--;
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (++selectedItemIdx >= filteredItems.length) {
+            selectedItemIdx = 0;
         }
-        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            event.preventDefault();
-            if (selectedItemIdx < 0) {
-                selectedItemIdx = filteredItems.length-1
-            }
-            if (selectedItemIdx >= filteredItems.length) {
-                selectedItemIdx = 0;
-            }
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (--selectedItemIdx < 0) {
+            selectedItemIdx = filteredItems.length-1
         }
     }
 }
 
 /**
  * Called on item selection.
- * @param {any} item
+ * @param {Item} item
  */
 const onSelect = (item) => {
     ref.value = item.label;

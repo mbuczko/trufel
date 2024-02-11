@@ -35,8 +35,8 @@ let isSearchable;
 let isDisabled;
 
 onMount(() => {
-    ref.showModal();
-    defaultInput.focus();
+    // ref.showModal();
+    // defaultInput.focus();
 
 })
 </script>
