@@ -33,7 +33,7 @@ const pattern = writable('');
 $: selectItem(0, $pattern, n => n+1);
 
 /**
- * Selects next or previous item, depending on transforming
+ * Highlights next or previous item, depending on transforming
  * function f which alters lookup index forward or backward respectively.
  *
  * @param {number} initIdx - initial lookup index
@@ -64,7 +64,8 @@ function selectItem(initIdx, pattern, f=(n)=>n) {
 }
 
 /**
- * @param {KeyboardEvent} event - keydown event to react on up/down/enter key downs.
+ * Reacts on up/down/enter key-downs to change or confirm selection.
+ * @param {KeyboardEvent} event
  * @listens KeyboardEvent
  */
 const onKeydown = (event) => {
@@ -83,8 +84,8 @@ const onKeydown = (event) => {
 }
 
 /**
- * Selects CommandMenuItem
- * @param {CustomEvent} event - The observable event
+ * Highlights CommandMenuItem at given index.
+ * @param {CustomEvent} event
  * @listens itemselected
  */
 const onItemSelected = ({detail: {index}}) => {
@@ -93,8 +94,8 @@ const onItemSelected = ({detail: {index}}) => {
 }
 
 /**
- * Invokes the action behind chosen CommandMenuItem
- * @param {CustomEvent} event - The observable event
+ * Invokes the action behind chosen CommandMenuItem.
+ * @param {CustomEvent} event
  * @listens iteminvoked
  */
 const onItemInvoked = ({detail: {index}}) => {
@@ -146,6 +147,7 @@ setContext('command-menu-register', (/** @type {CommandMenuItem} */ item) => {
     const len = items.length;
     items.push(item);
 
+    // registered item index is sufficient for now
     return {
         index: len
     };
@@ -171,7 +173,7 @@ setContext('command-menu-register', (/** @type {CommandMenuItem} */ item) => {
             on:keydown={onKeydown}/>
     </div>
     <div
-        class="max-h-[333px] overflow-y-auto overflow-x-hidden py-2"
+        class="max-h-[332px] overflow-y-auto overflow-x-hidden py-2"
         bind:this={itemsElement}>
         <slot />
     </div>
