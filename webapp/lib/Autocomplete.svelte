@@ -1,5 +1,6 @@
 <script>
 export let placeholder = 'Type something...';
+export let allowCreate = false;
 
 /**
  * @typedef Item
@@ -38,9 +39,13 @@ let popup;
 /** @type {String} */
 let pattern = '';
 
-/** @type {number} */
-let selectedItemIdx = -1;
+/** @type {Item | undefined} - selected item */
+let selectedItem;
 
+/** @type {number} - currently highlighted item */
+let highlightedItemIdx = -1;
+
+/** Reacts on pattern change by narrowing items list down to those matching new pattern */
 $: filteredItems = filter(items, pattern);
 
 /**
@@ -52,19 +57,14 @@ $: filteredItems = filter(items, pattern);
 const filter = (items, pattern) => {
     const lowered = pattern.toLowerCase();
     const isEmpty = pattern.length === 0;
+
+    // highlight first item on a list only when
+    // no empty pattern was already provided.
+
+    if (pattern && pattern.length) {
+         highlightedItemIdx = 0;
+    }
     return items.filter((item) => isEmpty || item.label.toLowerCase().includes(lowered));
-}
-
-const onFocus = () => {
-    popup.style.width = ref.offsetWidth + 'px';
-    popup.style.left = ref.offsetLeft + 'px';
-    popup.style.top = ref.offsetTop + ref.offsetHeight - 2 + 'px';
-    popup.style.display = 'block';
-    selectedItemIdx = -1;
-}
-
-const onFocusOut = () => {
-    popup.style.display = 'none';
 }
 
 /**
@@ -73,18 +73,22 @@ const onFocusOut = () => {
  */
 const onKeydown = (event) => {
     if (event.key === 'Enter') {
-        if (selectedItemIdx >= 0) {
-            onSelect(filteredItems[selectedItemIdx])
+        if (highlightedItemIdx >= 0) {
+            if (filteredItems.length) {
+                onSelect(filteredItems[highlightedItemIdx])
+            } else {
+                onCreate();
+            }
         }
     } else if (event.key === 'ArrowDown') {
         event.preventDefault();
-        if (++selectedItemIdx >= filteredItems.length) {
-            selectedItemIdx = 0;
+        if (++highlightedItemIdx >= filteredItems.length) {
+            highlightedItemIdx = 0;
         }
     } else if (event.key === 'ArrowUp') {
         event.preventDefault();
-        if (--selectedItemIdx < 0) {
-            selectedItemIdx = filteredItems.length-1
+        if (--highlightedItemIdx < 0) {
+            highlightedItemIdx = filteredItems.length-1
         }
     }
 }
@@ -94,7 +98,34 @@ const onKeydown = (event) => {
  * @param {Item} item
  */
 const onSelect = (item) => {
+    selectedItem = item;
     ref.value = item.label;
+    popup.style.display = 'none';
+}
+
+const onCreate = () => {
+    let item = {label: pattern, id: '123', icon: ''};
+    items.push(item);
+
+    selectedItem = item;
+    popup.style.display = 'none';
+}
+
+const onFocus = () => {
+    popup.style.width = ref.offsetWidth + 'px';
+    popup.style.left = ref.offsetLeft + 'px';
+    popup.style.top = ref.offsetTop + ref.offsetHeight - 2 + 'px';
+    popup.style.display = 'block';
+
+    // no selection by default
+    highlightedItemIdx = -1;
+
+    // no list filtering by default
+    pattern = '';
+}
+
+const onFocusOut = () => {
+    pattern = selectedItem ? selectedItem.label : '';
     popup.style.display = 'none';
 }
 </script>
@@ -113,17 +144,27 @@ const onSelect = (item) => {
         on:keydown={onKeydown}
         on:focus={onFocus}
         on:focusout={onFocusOut}/>
-    <ul class="absolute hidden w-full p-1 overflow-auto text-sm bg-white max-h-56 focus:outline-none"
+    <ul class="absolute hidden w-full p-1 overflow-auto text-sm bg-white max-h-56 focus:outline-none z-50"
         bind:this={popup}>
-        {#each filteredItems as {id, label, icon}, idx}
-            <li class="flex gap-1 items-center min-h-[30px] border-1 {selectedItemIdx === idx ? 'selected' : ''}"
-                data-item-id={id}
-                on:mousedown={() => onSelect(items[idx])}
-                on:mouseup={() => onSelect(items[idx])}>
-                {@html icon}
-                <span>{label}</span>
-            </li>
-        {/each}
+        {#if filteredItems.length === 0}
+            {#if allowCreate}
+                <li class="selected flex gap-1 items-center"
+                    on:mousedown={onCreate}>
+                    <svg xmlns="http://www.w3.org/2000/svg"  width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>
+                    <span class="truncate text-ellipsis"> Create <strong>{pattern}</strong> </span>
+                </li>
+            {/if}
+        {:else}
+            {#each filteredItems as {id, label, icon}, idx}
+                <li class="flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
+                    data-item-id={id}
+                    on:mousedown={() => onSelect(items[idx])}
+                    on:mouseup={() => onSelect(items[idx])}>
+                    {@html icon}
+                    <span>{label}</span>
+                </li>
+            {/each}
+        {/if}
     </ul>
 </span>
 

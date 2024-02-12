@@ -47,8 +47,8 @@ export const openDialog = () => {
                 {@html svgIcon}
             </button>
             <div class="self-start pt-2 min-w-40">
-                <h3 class="title text-gray-800 font-medium uppercase"> {title || '---'} </h3>
-                <div class="description text-xs text-gray-700"> {description || 'No description'} </div>
+                <h3 class="title text-gray-800 font-medium uppercase max-w-[160px] truncate text-ellipsis"> {title || '---'} </h3>
+                <div class="description text-xs text-gray-700 max-w-[160px] truncate text-ellipsis"> {description || 'No description'} </div>
             </div>
             <div class="mt-14 col-span-2">
                 <Toggle id="shared" label="Shared with others" hint="Other users can see this too" enabled={isShared} />
@@ -74,7 +74,7 @@ export const openDialog = () => {
                     </div>
                     <div>
                         <label for="category"> Category </label>
-                        <Autocomplete placeholder="Choose category..." />
+                        <Autocomplete placeholder="Choose category..." allowCreate={true} />
                     </div>
                     <div>
                         <label for="title"> Title </label>
