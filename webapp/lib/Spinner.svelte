@@ -8,7 +8,7 @@
 .lds-facebook {
 	display: inline-block;
 	position: relative;
-	width: 80px;
+	width: 50px;
 	height: 24px;
 }
 .lds-facebook div {

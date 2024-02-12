@@ -4,14 +4,18 @@ import SecurityContext from '$lib/SecurityContext.svelte';
 </script>
 
 <SecurityContext>
-	<nav id="top-nav">
-		<div class="flex items-center header p-2">
-            <div class="flex-1">
+    <header>
+        <nav id="top-nav">
+            <div class="flex items-center header p-2">
+                <div class="flex-1">
+                </div>
+                <div class="text-slate-500">
+                    <SessionButton />
+                </div>
             </div>
-			<div class="text-slate-500">
-				<SessionButton />
-			</div>
-		</div>
-	</nav>
-	<slot />
+        </nav>
+    </header>
+    <main class="flex-auto flex items-center justify-center">
+        <slot />
+    </main>
 </SecurityContext>

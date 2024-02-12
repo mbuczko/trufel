@@ -11,7 +11,7 @@ const { login, logout } = getContext('auth');
 
 <div class="session-button flex items-center">
 	{#if $identity.authenticating}
-		<Spinner />
+		
 	{:else if $identity.id}
 		<div class="profile-name text-sky-200">
 			<span>{$identity.firstName}</span>

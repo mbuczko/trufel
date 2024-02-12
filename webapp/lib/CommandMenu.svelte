@@ -32,30 +32,25 @@ $: selectItem(0, $pattern, n => n+1);
  * Selects next or previous item, depending on transforming
  * function f which alters lookup index forward or backward respectively.
  *
- * @param {number} startIdx - initial lookup index
+ * @param {number} initIdx - initial lookup index
  * @param {string} pattern - pattern that item needs to match
  * @param {function(number):number=} f - a function which transforms lookup index
  */
-function selectItem(startIdx, pattern, f=(n)=>n) {
-    let i = startIdx, len = items.length;
-    do {
-        // if index points at valid item and item matches given pattern
-        // then it becomes a candate for selection. otherwise, transform
-        // the index and re-iterate.
-        if (i >= 0 && i < len && items[i].onMatch(pattern)) {
-            break
-        }
-
-        i = f(i);
-
-        // ensure sane lookup boundaries and wrap the index if necessary.
-        if (i >= len) {
-            i = 0
-        } else if (i < 0) {
-            i = len - 1
-        };
-    } while (i !== startIdx);
-    selectedItemIdx.set(i);
+function selectItem(initIdx, pattern, f=(n)=>n) {
+    const len = items.length;
+    const startIdx = (initIdx < 0 ? len-1 : initIdx) % len;
+    
+    if (len) {
+        let idx = startIdx;
+        do {
+            if (items[idx].onMatch(pattern)) {
+                selectedItemIdx.set(idx);
+                break;
+            }
+            idx = f(idx) % len;
+            if (idx < 0) idx = len-1; 
+        } while (idx != startIdx);
+     }
 }
 
 /**
@@ -108,7 +103,7 @@ const onItemInvoked = ({detail: {index}}) => {
 const openCommandMenu = () => {
     items.length = 0;
     active = true;
-    
+
     // reset state values
     $selectedItemIdx = 0;
     $pattern = '';
@@ -125,7 +120,7 @@ onMount(() => {
         body.addEventListener('itemselected', onItemSelected);
         // @ts-ignore
         body.addEventListener('iteminvoked', onItemInvoked);
-            
+
         body.addEventListener('keydown', (event) => {
             if (event.metaKey && event.key === 'k') {
                 openCommandMenu();
@@ -148,7 +143,7 @@ setContext('command-menu-register', (/** @type {CommandMenuItem} */ item) => {
 </script>
 
 {#if active}
-<div class=" flex flex-col w-full h-full overflow-hidden bg-white border rounded-lg shadow-md"
+<div class="flex flex-col w-full h-full overflow-hidden bg-white border rounded-lg shadow-md"
      transition:scale={{ duration: 150, start: 0.9, easing: backInOut }}
      on:introstart={() => searchElement.focus()}>
     <div class="flex items-center px-3 border-b">
