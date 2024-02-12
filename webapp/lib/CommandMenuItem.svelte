@@ -54,7 +54,8 @@ const onItemInvoked = (event) => {
 <div bind:this={ref}
      on:mousedown={onItemSelected}
      on:mouseup={onItemInvoked}
-     class="command-item px-1">
+     class="command-item px-1"
+     data-item-index={index}>
     <div class="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-gray-900 {selected ? 'bg-neutral-100' : ''}" id="calendar-command-1">
         <span>
             <slot />

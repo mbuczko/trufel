@@ -1,6 +1,9 @@
 <script>
+import scrollIntoView from 'scroll-into-view-if-needed';
+
 export let placeholder = 'Type something...';
 export let allowCreate = false;
+export let maxVisible = 3;
 
 /**
  * @typedef Item
@@ -10,25 +13,7 @@ export let allowCreate = false;
  */
 
 /** @type {Item[]} */
-export let items = [
-    {
-        id: 'app',
-        label: 'Application',
-        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>bookmark-box-outline</title><path d="M5 3H19C20.1 3 21 3.89 21 5V19C21 19.53 20.79 20.04 20.41 20.41C20.04 20.79 19.53 21 19 21H5C4.47 21 3.96 20.79 3.59 20.41C3.21 20.04 3 19.53 3 19V5C3 3.89 3.89 3 5 3M19 19V5H5V19H19M17 7H12V15L14.5 13.5L17 15V7Z" /></svg>'
-    },
-    {
-        id: 'book',
-        label: 'Bookmark',
-        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>bookmark-outline</title><path d="M17,18L12,15.82L7,18V5H17M17,3H7A2,2 0 0,0 5,5V21L12,18L19,21V5C19,3.89 18.1,3 17,3Z" /></svg>'
-
-    },
-    {
-        id: 'aa',
-        label: 'Citadel',
-        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>bookmark-outline</title><path d="M17,18L12,15.82L7,18V5H17M17,3H7A2,2 0 0,0 5,5V21L12,18L19,21V5C19,3.89 18.1,3 17,3Z" /></svg>'
-
-    }
-]
+export let items = [];
 
 /** @type {HTMLInputElement} */
 let ref;
@@ -74,6 +59,14 @@ const showPopup = () => {
     popup.style.left = ref.offsetLeft + 'px';
     popup.style.top = ref.offsetTop + ref.offsetHeight - 2 + 'px';
     popup.style.display = 'block';
+
+    // compute popup height based on individual item height * max items visible
+    let children = popup.children;
+    let first = children && children.length && children[0];
+
+    if (first) {
+        popup.style.maxHeight = (first.clientHeight * maxVisible + 9) + 'px';
+    }
 }
 
 /**
@@ -90,6 +83,17 @@ const closePopup = (item) => {
 }
 
 /**
+ * Scrolls list to make item at given index visible
+ * @param {number} itemIndex
+ */
+const scrollToItem = (itemIndex) => {
+    let el = popup.querySelector(`li[data-item-index="${itemIndex}"]`);
+    if (el) {
+        scrollIntoView(el, { scrollMode: 'if-needed',  block: 'center' });
+    }
+}
+
+/**
  * Called on item selection.
  * @param {Event} event
  * @param {Item} item
@@ -100,7 +104,7 @@ const onSelect = (event, item) => {
 }
 
 /**
- * Called on item creation
+ * Called on item creation.
  * @param {Event} _event
  * @param {string} text - text to create an item from
  */
@@ -129,19 +133,20 @@ const onFocusOut = () => {
 }
 
 /**
- * @param {KeyboardEvent} event - keydown event to react on up/down arrows.
+ * Called on keydown event to react on up/down arrows.
+ * @param {KeyboardEvent} event
  * @listens KeyboardEvent
  */
 const onKeydown = (event) => {
     if (event.key === 'Enter') {
         if (highlightedItemIdx >= 0) {
             let item = filteredItems[highlightedItemIdx];
-            
+
             // if there is a valid item selected, just accept it.
-            // otherwise, if allowed, create a brand new item.
+            // otherwise, if allowed, create a brand new one.
             //
             // in case of any unacceptable garbage, bail out - ignore the event.
-            
+
             if (item) {
                 onSelect(event, item);
             } else if (allowCreate) {
@@ -152,21 +157,18 @@ const onKeydown = (event) => {
         }
     } else if (event.key === 'ArrowDown') {
         event.preventDefault();
-
-        // this is to enforce popup to be visible
-        // in case when it has been already closed,
-        // eg. by choosing other item with mouse-up
-        // event.
-        showPopup();
-
         if (++highlightedItemIdx >= filteredItems.length) {
             highlightedItemIdx = 0;
         }
+        scrollToItem(highlightedItemIdx);
     } else if (event.key === 'ArrowUp') {
         event.preventDefault();
         if (--highlightedItemIdx < 0) {
             highlightedItemIdx = filteredItems.length-1
         }
+        scrollToItem(highlightedItemIdx);
+    } else if (allowCreate && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+        showPopup();
     }
 }
 </script>
@@ -185,7 +187,7 @@ const onKeydown = (event) => {
         on:keydown={onKeydown}
         on:focus={onFocus}
         on:focusout={onFocusOut}/>
-    <ul class="absolute hidden w-full p-1 overflow-auto text-sm bg-white max-h-56 focus:outline-none z-50"
+    <ul class="absolute hidden w-full p-1 overflow-y-auto overflow-x-hidden text-sm bg-white max-h-px focus:outline-none z-40"
         bind:this={popup}>
         {#if filteredItems.length === 0}
             {#if allowCreate}
@@ -196,9 +198,9 @@ const onKeydown = (event) => {
                 </li>
             {/if}
         {:else}
-            {#each filteredItems as {id, label, icon}, idx}
+            {#each filteredItems as {label, icon}, idx}
                 <li class="flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
-                    data-item-id={id}
+                    data-item-index={idx}
                     on:mousedown={(e) => onSelect(e, items[idx])}
                     on:mouseup={(e) => onSelect(e, items[idx])}>
                     {@html icon}
