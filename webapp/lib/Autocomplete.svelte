@@ -62,60 +62,60 @@ const filter = (items, pattern) => {
     // no empty pattern was already provided.
 
     if (pattern && pattern.length) {
-         highlightedItemIdx = 0;
+        highlightedItemIdx = 0;
     }
     return items.filter((item) => isEmpty || item.label.toLowerCase().includes(lowered));
 }
 
-/**
- * @param {KeyboardEvent} event - keydown event to react on up/down arrows.
- * @listens KeyboardEvent
- */
-const onKeydown = (event) => {
-    if (event.key === 'Enter') {
-        if (highlightedItemIdx >= 0) {
-            if (filteredItems.length) {
-                onSelect(filteredItems[highlightedItemIdx])
-            } else if (allowCreate) {
-                onCreate();
-            }
-        }
-    } else if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        if (++highlightedItemIdx >= filteredItems.length) {
-            highlightedItemIdx = 0;
-        }
-    } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        if (--highlightedItemIdx < 0) {
-            highlightedItemIdx = filteredItems.length-1
-        }
-    }
-}
+const showPopup = () => {
+    ref.readOnly = false;
 
-/**
- * Called on item selection.
- * @param {Item} item
- */
-const onSelect = (item) => {
-    selectedItem = item;
-    ref.value = item.label;
-    popup.style.display = 'none';
-}
-
-const onCreate = () => {
-    let item = {label: pattern, id: '123', icon: ''};
-    items.push(item);
-
-    selectedItem = item;
-    popup.style.display = 'none';
-}
-
-const onFocus = () => {
     popup.style.width = ref.offsetWidth + 'px';
     popup.style.left = ref.offsetLeft + 'px';
     popup.style.top = ref.offsetTop + ref.offsetHeight - 2 + 'px';
     popup.style.display = 'block';
+}
+
+/**
+ * Hides a popup with items and sets provided items as selected
+ * @param {Item | undefined} item - an item to set as selected
+ */
+const closePopup = (item) => {
+    if (!allowCreate && item) {
+        ref.readOnly = true;
+    }
+    selectedItem = item;
+    pattern = (item && item.label) || '';
+    popup.style.display = 'none';
+}
+
+/**
+ * Called on item selection.
+ * @param {Event} event
+ * @param {Item} item
+ */
+const onSelect = (event, item) => {
+    event.preventDefault();
+    closePopup(item);
+}
+
+/**
+ * Called on item creation
+ * @param {Event} _event
+ * @param {string} text - text to create an item from
+ */
+const onCreate = (_event, text) => {
+    items.push({label: text, id: '123', icon: ''});
+    closePopup(items.at(-1));
+}
+
+const onFocus = () => {
+    showPopup();
+
+    // placeholder holds current value (if there is any)
+    if (selectedItem) {
+        placeholder = selectedItem.label;
+    }
 
     // no item highlighted by default
     highlightedItemIdx = -1;
@@ -125,8 +125,49 @@ const onFocus = () => {
 }
 
 const onFocusOut = () => {
-    pattern = selectedItem ? selectedItem.label : '';
-    popup.style.display = 'none';
+    closePopup(selectedItem);
+}
+
+/**
+ * @param {KeyboardEvent} event - keydown event to react on up/down arrows.
+ * @listens KeyboardEvent
+ */
+const onKeydown = (event) => {
+    if (event.key === 'Enter') {
+        if (highlightedItemIdx >= 0) {
+            let item = filteredItems[highlightedItemIdx];
+            
+            // if there is a valid item selected, just accept it.
+            // otherwise, if allowed, create a brand new item.
+            //
+            // in case of any unacceptable garbage, bail out - ignore the event.
+            
+            if (item) {
+                onSelect(event, item);
+            } else if (allowCreate) {
+                onCreate(event, pattern);
+            } else {
+                event.preventDefault();
+            }
+        }
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+
+        // this is to enforce popup to be visible
+        // in case when it has been already closed,
+        // eg. by choosing other item with mouse-up
+        // event.
+        showPopup();
+
+        if (++highlightedItemIdx >= filteredItems.length) {
+            highlightedItemIdx = 0;
+        }
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (--highlightedItemIdx < 0) {
+            highlightedItemIdx = filteredItems.length-1
+        }
+    }
 }
 </script>
 
@@ -148,8 +189,8 @@ const onFocusOut = () => {
         bind:this={popup}>
         {#if filteredItems.length === 0}
             {#if allowCreate}
-                <li class="selected flex gap-1 items-center"
-                    on:mousedown={onCreate}>
+                <li class="selected flex gap-1 items-center min-h-[30px] border-1"
+                    on:mousedown={(e) => onCreate(e, pattern)}>
                     <svg xmlns="http://www.w3.org/2000/svg"  width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>
                     <span class="truncate text-ellipsis"> Create <strong>{pattern}</strong> </span>
                 </li>
@@ -158,8 +199,8 @@ const onFocusOut = () => {
             {#each filteredItems as {id, label, icon}, idx}
                 <li class="flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
                     data-item-id={id}
-                    on:mousedown={() => onSelect(items[idx])}
-                    on:mouseup={() => onSelect(items[idx])}>
+                    on:mousedown={(e) => onSelect(e, items[idx])}
+                    on:mouseup={(e) => onSelect(e, items[idx])}>
                     {@html icon}
                     <span>{label}</span>
                 </li>
