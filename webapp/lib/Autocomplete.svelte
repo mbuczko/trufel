@@ -76,7 +76,7 @@ const onKeydown = (event) => {
         if (highlightedItemIdx >= 0) {
             if (filteredItems.length) {
                 onSelect(filteredItems[highlightedItemIdx])
-            } else {
+            } else if (allowCreate) {
                 onCreate();
             }
         }
@@ -117,7 +117,7 @@ const onFocus = () => {
     popup.style.top = ref.offsetTop + ref.offsetHeight - 2 + 'px';
     popup.style.display = 'block';
 
-    // no selection by default
+    // no item highlighted by default
     highlightedItemIdx = -1;
 
     // no list filtering by default
