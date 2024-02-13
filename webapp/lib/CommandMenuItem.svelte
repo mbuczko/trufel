@@ -11,7 +11,7 @@ export let action;
 export let shortcut = '';
 
 /** @type HTMLElement */
-let ref;
+let item;
 
 /**
  * Returns true if title matches given pattern. Returns false otherwise.
@@ -35,7 +35,7 @@ $: selected = $selectedItemIdx === index;
  */
 const onItemSelected = (event) => {
     event.preventDefault();
-    ref.dispatchEvent(new CustomEvent('itemselected', { detail: {index}, bubbles: true }));
+    item.dispatchEvent(new CustomEvent('itemselected', { detail: {index}, bubbles: true }));
 }
 
 /**
@@ -44,14 +44,14 @@ const onItemSelected = (event) => {
  */
 const onItemInvoked = (event) => {
     event.preventDefault();
-    ref.dispatchEvent(new CustomEvent('iteminvoked', { detail: {index}, bubbles: true }));
+    item.dispatchEvent(new CustomEvent('iteminvoked', { detail: {index}, bubbles: true }));
 }
 
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 {#if contains($pattern)}
-<div bind:this={ref}
+<div bind:this={item}
      on:mousedown={onItemSelected}
      on:mouseup={onItemInvoked}
      class="command-item px-1"

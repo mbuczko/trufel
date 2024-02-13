@@ -1,12 +1,6 @@
 <script>
 import scrollIntoView from 'scroll-into-view-if-needed';
 
-export let placeholder = 'Type something...';
-export let allowCreate = false;
-export let maxVisible = 3;
-
-const createSvgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>';
-
 /**
  * @typedef Item
  * @property {string} id
@@ -17,8 +11,14 @@ const createSvgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height
 /** @type {Item[]} */
 export let items = [];
 
+export let placeholder = 'Type something...';
+export let allowCreate = false;
+export let maxVisible = 3;
+
+const createSvgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>';
+
 /** @type {HTMLInputElement} */
-let ref;
+let input;
 
 /** @type {HTMLElement} */
 let popup;
@@ -62,11 +62,11 @@ const filter = (items, pattern) => {
  * Dynamically deduces height of list based on maxVisible number.
  */
 const showPopup = () => {
-    ref.readOnly = false;
+    input.readOnly = false;
 
-    popup.style.width = ref.offsetWidth + 'px';
-    popup.style.left = ref.offsetLeft + 'px';
-    popup.style.top = ref.offsetTop + ref.offsetHeight - 2 + 'px';
+    popup.style.width = input.offsetWidth + 'px';
+    popup.style.left = input.offsetLeft + 'px';
+    popup.style.top = input.offsetTop + input.offsetHeight - 2 + 'px';
     popup.style.display = 'block';
 
     // compute popup height based on individual item height * max items visible
@@ -84,7 +84,7 @@ const showPopup = () => {
  */
 const closePopup = (item) => {
     if (!allowCreate) {
-        ref.readOnly = true;
+        input.readOnly = true;
     }
     selectedItem = item;
     pattern = (item && item.label) || '';
@@ -198,7 +198,7 @@ const onKeydown = (event) => {
         autocorrect="off"
         spellcheck="false"
         bind:value={pattern}
-        bind:this={ref}
+        bind:this={input}
         on:mousedown={onFocus}
         on:keydown={onKeydown}
         on:focus={onFocus}
