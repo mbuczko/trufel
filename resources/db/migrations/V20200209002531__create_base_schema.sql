@@ -10,8 +10,11 @@ CREATE TABLE IF NOT EXISTS users
 CREATE TABLE IF NOT EXISTS categories
 (
   category_id UUID PRIMARY KEY,
+  user_id UUID NOT NULL,
   name TEXT NOT NULL,
-  position INTEGER NOT NULL DEFAULT 0
+  position INTEGER NOT NULL DEFAULT 0,
+
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
 CREATE TABLE IF NOT EXISTS applications

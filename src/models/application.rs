@@ -32,7 +32,7 @@ pub async fn fetch_applications(
             .await
             .map_err(|e| {
                 tracing::error!(error = ?e, "Could load user's applications");
-                InternalError::UserAppsFetchError
+                InternalError::AppsFetch
             })?,
     )
 }

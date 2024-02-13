@@ -14,16 +14,19 @@ pub struct ServiceError(anyhow::Error);
 #[derive(Error, Debug)]
 pub enum InternalError {
     #[error("User update failed")]
-    UserUpdateError,
+    UserUpdate,
 
     #[error("User's apps couldn't be fetched")]
-    UserAppsFetchError,
+    AppsFetch,
 
     #[error("User's links couldn't be fetched")]
-    UserLinksFetchError,
+    LinksFetch,
 
     #[error("User's categories couldn't be fetched")]
-    UserCategoriesFetchError,
+    CategoriesFetch,
+
+    #[error("New category couldn't be created")]
+    CategoriesCreate,
 }
 
 #[derive(Error, Debug)]

@@ -63,7 +63,7 @@ pub async fn store(pool: &Pool<Sqlite>, user: User) -> anyhow::Result<User> {
         Ok(user) => Ok(user.unwrap()),
         Err(e) => {
             tracing::error!(error = ?e, "User stored but not found. This should not happen");
-            bail!(InternalError::UserUpdateError)
+            bail!(InternalError::UserUpdate)
         }
     }
 }

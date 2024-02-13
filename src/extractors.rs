@@ -51,6 +51,7 @@ where
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         use axum::RequestPartsExt;
+
         let Extension(claims) = parts
             .extract::<Extension<Claims>>()
             .await

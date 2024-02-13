@@ -11,6 +11,8 @@ pub async fn add_claim_details(
     mut request: Request,
     next: Next,
 ) -> Result<impl IntoResponse, Response> {
-    request.extensions_mut().insert(claims);
+    if let Some(claims) = claims {
+        request.extensions_mut().insert(claims);
+    }
     Ok(next.run(request).await)
 }
