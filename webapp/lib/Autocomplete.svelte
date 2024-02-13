@@ -39,8 +39,9 @@ $: filteredItems = filter(items, pattern);
  * Narrows down a list of items to those with labels matching new pattern.
  * Empty pattern does not impact the list - all the items are returned.
  *
- * If pattern is unique across all the items labels, a special item with id="_create_"
- * is prepended to keep the consistent popup behavior (navigating, selecting, etc.)
+ * If pattern is a unique string across all the items labels, a special item with
+ * id="_create_" is prepended to keep the popup behavior consistent (navigation,
+ * selecting, etc.)
  *
  * @param {Item[]} items - items to filter
  * @param {string} pattern - pattern to apply on each item
@@ -235,12 +236,10 @@ const onKeydown = (event) => {
      border-radius: 0 0 3px 3px;
      box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
  }
+ .autocomplete li.selected,
  .autocomplete li:hover {
      background-color: var(--menu-item-highlighted);
      border-radius: 2px;
      cursor: pointer;
- }
- .autocomplete li.selected {
-     background-color: var(--menu-item-highlighted)
  }
 </style>

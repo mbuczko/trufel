@@ -46,7 +46,6 @@ const onItemInvoked = (event) => {
     event.preventDefault();
     item.dispatchEvent(new CustomEvent('iteminvoked', { detail: {index}, bubbles: true }));
 }
-
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
