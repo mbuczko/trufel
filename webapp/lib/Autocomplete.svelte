@@ -27,13 +27,13 @@ let pattern = '';
 /** @type {Item | undefined} - selected item */
 let selectedItem;
 
-/** @type {number} - currently highlighted item */
-let highlightedItemIdx = -1;
-
-/** Reacts on pattern change by narrowing items list down to those matching new pattern */
+/** Reacts on pattern change initializing highlighted item index */
+$: highlightedItemIdx = (pattern.length) ? 0 : -1;
+    
+/** Reacts on pattern change by narrowing down list of items to ones matching new pattern */
 $: filteredItems = filter(items, pattern);
 
-/** Reacts on pattern change by verifying its uniqueness across all the items */
+/** Reacts on pattern change by verifying if it's a unique string across all the items labels */
 $: isUniqueItem = isUnique(items, pattern);
 
 /**
@@ -46,13 +46,6 @@ const filter = (items, pattern) => {
     const lowered = pattern.toLowerCase();
     const isEmpty = pattern.length === 0;
 
-    // nasty side effect...
-    // highlight first item on a list only when
-    // no empty pattern was already provided.
-
-    if (pattern.length) {
-        highlightedItemIdx = 0;
-    }
     return items.filter((item) => isEmpty || item.label.toLowerCase().includes(lowered));
 }
 
