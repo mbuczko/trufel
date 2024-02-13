@@ -46,6 +46,7 @@ const filter = (items, pattern) => {
     const lowered = pattern.toLowerCase();
     const isEmpty = pattern.length === 0;
 
+    // nasty side effect...
     // highlight first item on a list only when
     // no empty pattern was already provided.
 
@@ -91,7 +92,7 @@ const showPopup = () => {
  * @param {Item | undefined} item
  */
 const closePopup = (item) => {
-    if (!allowCreate && item) {
+    if (!allowCreate) {
         ref.readOnly = true;
     }
     selectedItem = item;
@@ -184,6 +185,10 @@ const onKeydown = (event) => {
             highlightedItemIdx = filteredItems.length-1
         }
         scrollToItem(highlightedItemIdx);
+    } else if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        closePopup(selectedItem);
     } else if (allowCreate && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
         showPopup();
     }
@@ -207,7 +212,7 @@ const onKeydown = (event) => {
     <ul class="absolute hidden w-full p-1 overflow-y-auto overflow-x-hidden text-sm bg-white max-h-px focus:outline-none z-40"
         bind:this={popup}>
         {#if allowCreate && isUniqueItem}
-            <li class="{filteredItems.length === 0 ? 'selected' : ''} unique flex gap-1 items-center min-h-[30px] border-1"
+            <li class="{filteredItems.length === 0 ? 'selected' : ''} flex gap-1 items-center min-h-[30px] border-1"
                 on:mousedown={(e) => onCreate(e, pattern)}>
                 <svg xmlns="http://www.w3.org/2000/svg"  width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>
                 <span class="truncate text-ellipsis"> Create <strong>{pattern}</strong> </span>
