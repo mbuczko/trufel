@@ -5,9 +5,6 @@ import { scale } from 'svelte/transition';
 import { backInOut } from 'svelte/easing';
 import { writable } from 'svelte/store';
 
-/** @type {boolean} */
-let active = false;
-
 /**
  * @typedef CommandMenuItem
  * @property {function(String):boolean} onMatch - returns true if item contains given pattern
@@ -16,6 +13,9 @@ let active = false;
 
 /** @type {CommandMenuItem[]} */
 const items = [];
+
+/** @type {boolean} */
+let active = false;
 
 /** @type {HTMLElement} - items container element */
 let container;
@@ -155,10 +155,9 @@ setContext('command-menu-register', (/** @type {CommandMenuItem} */ item) => {
 </script>
 
 {#if active}
-<div
-    class="flex flex-col w-full h-full overflow-hidden bg-white border rounded-lg shadow-md z-50"
-    transition:scale={{ duration: 150, start: 0.9, easing: backInOut }}
-    on:introstart={() => input.focus()}>
+<div class="flex flex-col w-full h-full overflow-hidden bg-white border rounded-lg shadow-md z-50"
+     transition:scale={{ duration: 150, start: 0.9, easing: backInOut }}
+     on:introstart={() => input.focus()}>
     <div class="flex items-center px-3 border-b">
         <svg class="w-4 h-4 mr-0 text-neutral-400 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-darkreader-inline-stroke="" style="--darkreader-inline-stroke: currentColor;"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
         <input
@@ -172,9 +171,9 @@ setContext('command-menu-register', (/** @type {CommandMenuItem} */ item) => {
             bind:value={$pattern}
             on:keydown={onKeydown}/>
     </div>
-    <div
-        class="max-h-[332px] overflow-y-auto overflow-x-hidden py-2"
-        bind:this={container}>
+    <div class="max-h-[332px] overflow-y-auto overflow-x-hidden py-2"
+         role="menu"
+         bind:this={container}>
         <slot />
     </div>
 </div>

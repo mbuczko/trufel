@@ -1,20 +1,16 @@
 <script>
 import scrollIntoView from 'scroll-into-view-if-needed';
+import { createEventDispatcher } from 'svelte';
+import '$lib/types.js';
 
-/**
- * @typedef Item
- * @property {string} id
- * @property {string} label
- * @property {string} icon
- */
-
-/** @type {Item[]} */
+/** @type {AutocompleteItem[]} */
 export let items = [];
 
 export let placeholder = 'Type something...';
 export let allowCreate = false;
 export let maxVisible = 3;
 
+const dispatch = createEventDispatcher();
 const createSvgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>';
 
 /** @type {HTMLInputElement} */
@@ -26,7 +22,7 @@ let popup;
 /** @type {String} */
 let pattern = '';
 
-/** @type {Item | undefined} */
+/** @type {AutocompleteItem | undefined} */
 let selectedItem;
 
 /** Reacts on pattern change initializing highlighted item index */
@@ -43,7 +39,7 @@ $: filteredItems = filter(items, pattern);
  * id="_create_" is prepended to keep the popup behavior consistent (navigation,
  * selecting, etc.)
  *
- * @param {Item[]} items - items to filter
+ * @param {AutocompleteItem[]} items - items to filter
  * @param {string} pattern - pattern to apply on each item
  */
 const filter = (items, pattern) => {
@@ -81,7 +77,7 @@ const showPopup = () => {
 
 /**
  * Hides a popup with items and updates input field with selected item.
- * @param {Item | undefined} item
+ * @param {AutocompleteItem | undefined} item
  */
 const closePopup = (item) => {
     if (!allowCreate) {
@@ -111,17 +107,24 @@ const scrollToItem = (itemIndex) => {
  * Called on item selection.
  *
  * @param {Event} event
- * @param {Item} item
+ * @param {AutocompleteItem} item
  */
 const onSelect = (event, item) => {
     event.preventDefault();
 
     // react accordingly if "Create..." item has been selected
     if (item.id === '_create_') {
-        item = {label: item.label, id: '123', icon: ''};
-        items.push(item);
+        dispatch('create', {
+            text: item.label,
+            resolve: (/** @type {AutocompleteItem} */ item) => {
+                closePopup(item);
+            }
+        });
+        // item = {label: item.label, id: '123', icon: ''};
+        // items.push(item);
+    } else {
+        closePopup(item);
     }
-    closePopup(item);
 }
 
 const onFocus = () => {
@@ -205,10 +208,13 @@ const onKeydown = (event) => {
         on:focus={onFocus}
         on:focusout={onFocusOut}/>
     <ul class="absolute hidden w-full p-1 overflow-y-auto overflow-x-hidden text-sm bg-white max-h-px focus:outline-none z-40"
+        role="menu"
         bind:this={popup}>
+        
         {#each filteredItems as item, idx}
             {@const {id, label, icon} = item}
             <li class="flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
+                role="menuitem"
                 data-item-index={idx}
                 on:mousedown={(e) => onSelect(e, item)}
                 on:mouseup={(e) => onSelect(e, item)}>
