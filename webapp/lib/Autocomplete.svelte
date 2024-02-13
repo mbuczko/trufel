@@ -39,6 +39,9 @@ $: filteredItems = filter(items, pattern);
  * Narrows down a list of items to those with labels matching new pattern.
  * Empty pattern does not impact the list - all the items are returned.
  *
+ * If pattern is unique across all the items labels, a special item with id="_create_"
+ * is prepended to keep the consistent popup behavior (navigating, selecting, etc.)
+ *
  * @param {Item[]} items - items to filter
  * @param {string} pattern - pattern to apply on each item
  */
