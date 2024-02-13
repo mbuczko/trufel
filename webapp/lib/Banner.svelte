@@ -30,9 +30,3 @@ export let style = '';
         {/if}
     </div>
 </div>
-
-<style>
- .banner a {
-     color: blue;
- }
-</style>

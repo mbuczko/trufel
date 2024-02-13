@@ -100,8 +100,12 @@ const closePopup = (item) => {
     popup.style.display = 'none';
 }
 
+const isPopupOpen = () => {
+    return popup.style.display !== 'none';
+}
+
 /**
- * Scrolls list to make item at given index visible
+ * Scrolls list to make item at given index visible.
  * @param {number} itemIndex
  */
 const scrollToItem = (itemIndex) => {
@@ -151,7 +155,7 @@ const onFocusOut = () => {
 }
 
 /**
- * Called on keydown event to react on up/down arrows.
+ * Called on keydown event to react on up/down/enter/escape keys.
  * @param {KeyboardEvent} event
  * @listens KeyboardEvent
  */
@@ -186,10 +190,17 @@ const onKeydown = (event) => {
         }
         scrollToItem(highlightedItemIdx);
     } else if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        closePopup(selectedItem);
+        // close the popup if it's open, bubble up event otherwise
+        if (isPopupOpen()) {
+            event.preventDefault();
+            event.stopPropagation();
+            closePopup(selectedItem);
+        }
     } else if (allowCreate && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+        // for allowCreate mode popup should be always displayed
+        // as it contains possible choice between new item creation
+        // and selection of already existing item, if entry matches
+        // any of the items labels.
         showPopup();
     }
 }

@@ -89,3 +89,12 @@ dialog {
   font-size: 0.8em;
   font-variant-caps: petite-caps;
 }
+
+@media only screen and (max-width: 670px) {
+  .banner {
+    display: none;
+  }
+}
+.banner a {
+  color: blue;
+}
