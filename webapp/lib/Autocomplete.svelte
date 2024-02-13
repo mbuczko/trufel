@@ -36,24 +36,6 @@ $: highlightedItemIdx = (pattern.length) ? 0 : -1;
 $: filteredItems = filter(items, pattern);
 
 /**
- * Returns true if given text is unique across all the items labels.
- *
- * As it's used in allowCreate mode only to show or hide additional
- * "Create..." item, for performance reasons verification happens
- * only when this flag is on. Otherwise, returns false immediately.
- *
- * @param {Item[]} items - items to go through
- * @param {string} text - text to verify
- */
-const isUnique = (items, text) => {
-    if (allowCreate && text.length) {
-        const lowered = text.toLowerCase();
-        return !Boolean(items.find((item) => item.label.toLowerCase() === lowered));
-    }
-    return false;
-}
-
-/**
  * Narrows down a list of items to those with labels matching new pattern.
  * Empty pattern does not impact the list - all the items are returned.
  *
@@ -64,8 +46,9 @@ const filter = (items, pattern) => {
     const lowered = pattern.toLowerCase();
     const isEmpty = pattern.length === 0;
     const filtered = items.filter((item) => isEmpty || item.label.toLowerCase().includes(lowered));
-
-    if (isUnique(filtered, pattern)) {
+    const isUnique = allowCreate && !isEmpty && !Boolean(filtered.find((item) => item.label.toLowerCase() === lowered));
+    
+    if (isUnique) {
         filtered.unshift({id: '_create_', label: pattern, icon: createSvgIcon})
     }
     return filtered;
