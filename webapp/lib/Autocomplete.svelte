@@ -5,6 +5,8 @@ export let placeholder = 'Type something...';
 export let allowCreate = false;
 export let maxVisible = 3;
 
+const createSvgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>';
+
 /**
  * @typedef Item
  * @property {string} id
@@ -24,17 +26,32 @@ let popup;
 /** @type {String} */
 let pattern = '';
 
-/** @type {Item | undefined} - selected item */
+/** @type {Item | undefined} */
 let selectedItem;
 
 /** Reacts on pattern change initializing highlighted item index */
 $: highlightedItemIdx = (pattern.length) ? 0 : -1;
-    
+
 /** Reacts on pattern change by narrowing down list of items to ones matching new pattern */
 $: filteredItems = filter(items, pattern);
 
-/** Reacts on pattern change by verifying if it's a unique string across all the items labels */
-$: isUniqueItem = isUnique(items, pattern);
+/**
+ * Returns true if given text is unique across all the items labels.
+ *
+ * As it's used in allowCreate mode only to show or hide additional
+ * "Create..." item, for performance reasons verification happens
+ * only when this flag is on. Otherwise, returns false immediately.
+ *
+ * @param {Item[]} items - items to go through
+ * @param {string} text - text to verify
+ */
+const isUnique = (items, text) => {
+    if (allowCreate && text.length) {
+        const lowered = text.toLowerCase();
+        return !Boolean(items.find((item) => item.label.toLowerCase() === lowered));
+    }
+    return false;
+}
 
 /**
  * Narrows down a list of items to those with labels matching new pattern.
@@ -46,27 +63,12 @@ $: isUniqueItem = isUnique(items, pattern);
 const filter = (items, pattern) => {
     const lowered = pattern.toLowerCase();
     const isEmpty = pattern.length === 0;
+    const filtered = items.filter((item) => isEmpty || item.label.toLowerCase().includes(lowered));
 
-    return items.filter((item) => isEmpty || item.label.toLowerCase().includes(lowered));
-}
-
-/**
- * Returns true if given text is unique across all the items labels.
- * 
- * As it's used in allowCreate mode only to show or hide additional
- * "Create..." item, for performance reasons verification happens
- * only when this flag is on. Otherwise, returns false immediately.
- *
- * @param {Item[]} items - items to go through
- * @param {string} text - text to verify
- */
-const isUnique = (items, text) => {
-    const lowered = text.toLowerCase();
-
-    if (allowCreate && text.length) {
-        return !Boolean(items.find((item) => item.label.toLowerCase() === lowered));
+    if (isUnique(filtered, pattern)) {
+        filtered.unshift({id: '_create_', label: pattern, icon: createSvgIcon})
     }
-    return false;
+    return filtered;
 }
 
 /**
@@ -126,18 +128,13 @@ const scrollToItem = (itemIndex) => {
  */
 const onSelect = (event, item) => {
     event.preventDefault();
-    closePopup(item);
-}
 
-/**
- * Called on item creation.
- *
- * @param {Event} _event
- * @param {string} text - text to create an item from
- */
-const onCreate = (_event, text) => {
-    items.push({label: text, id: '123', icon: ''});
-    closePopup(items.at(-1));
+    // react accordingly if "Create..." item has been selected
+    if (item.id === '_create_') {
+        item = {label: item.label, id: '123', icon: ''};
+        items.push(item);
+    }
+    closePopup(item);
 }
 
 const onFocus = () => {
@@ -167,36 +164,30 @@ const onFocusOut = () => {
  */
 const onKeydown = (event) => {
     if (event.key === 'Enter') {
-        if (highlightedItemIdx >= 0) {
-            let item = filteredItems[highlightedItemIdx];
+        const item = highlightedItemIdx >= 0 && filteredItems[highlightedItemIdx];
 
-            // if there is a valid item selected, just accept it.
-            // otherwise, if allowed, create a brand new one.
-            //
-            // in case of any unacceptable garbage, bail out - ignore the event.
+        // if there is a valid item selected, just accept it.
+        // otherwise, it's unacceptable garbage - ignore the event.
 
-            if (item) {
-                onSelect(event, item);
-            } else if (allowCreate) {
-                onCreate(event, pattern);
-            } else {
-                event.preventDefault();
-            }
+        if (item) {
+            onSelect(event, item);
+        } else {
+            event.preventDefault();
         }
     } else if (event.key === 'ArrowDown') {
-        event.preventDefault();
         if (++highlightedItemIdx >= filteredItems.length) {
             highlightedItemIdx = 0;
         }
+        event.preventDefault();
         scrollToItem(highlightedItemIdx);
     } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
         if (--highlightedItemIdx < 0) {
             highlightedItemIdx = filteredItems.length-1
         }
+        event.preventDefault();
         scrollToItem(highlightedItemIdx);
     } else if (event.key === 'Escape') {
-        // close the popup if it's open, bubble up event otherwise
+        // close the popup if it's opened, bubble up event otherwise
         if (isPopupOpen()) {
             event.preventDefault();
             event.stopPropagation();
@@ -228,20 +219,20 @@ const onKeydown = (event) => {
         on:focusout={onFocusOut}/>
     <ul class="absolute hidden w-full p-1 overflow-y-auto overflow-x-hidden text-sm bg-white max-h-px focus:outline-none z-40"
         bind:this={popup}>
-        {#if allowCreate && isUniqueItem}
-            <li class="{filteredItems.length === 0 ? 'selected' : ''} flex gap-1 items-center min-h-[30px] border-1"
-                on:mousedown={(e) => onCreate(e, pattern)}>
-                <svg xmlns="http://www.w3.org/2000/svg"  width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>
-                <span class="truncate text-ellipsis"> Create <strong>{pattern}</strong> </span>
-            </li>
-        {/if}
-        {#each filteredItems as {label, icon}, idx}
+        {#each filteredItems as item, idx}
+            {@const {id, label, icon} = item}
             <li class="flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
                 data-item-index={idx}
-                on:mousedown={(e) => onSelect(e, items[idx])}
-                on:mouseup={(e) => onSelect(e, items[idx])}>
+                on:mousedown={(e) => onSelect(e, item)}
+                on:mouseup={(e) => onSelect(e, item)}>
                 {@html icon}
-                <span>{label}</span>
+                <span class="truncate text-ellipsis">
+                    {#if id === '_create_'}
+                        Create <strong>{pattern}</strong>
+                    {:else}
+                        {label}
+                    {/if}
+                </span>
             </li>
         {/each}
     </ul>
