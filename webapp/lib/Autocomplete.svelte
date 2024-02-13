@@ -37,7 +37,8 @@ $: filteredItems = filter(items, pattern);
 $: isUniqueItem = isUnique(items, pattern);
 
 /**
- * Filters input items (on label) agains given pattern.
+ * Narrows down a list of items to those with labels matching new pattern.
+ * Empty pattern does not impact the list - all the items are returned.
  *
  * @param {Item[]} items - items to filter
  * @param {string} pattern - pattern to apply on each item
@@ -51,18 +52,27 @@ const filter = (items, pattern) => {
 
 /**
  * Returns true if given text is unique across all the items labels.
- * For performance reasons, verification happens only when allowCreate is on.
+ * 
+ * As it's used in allowCreate mode only to show or hide additional
+ * "Create..." item, for performance reasons verification happens
+ * only when this flag is on. Otherwise, returns false immediately.
+ *
  * @param {Item[]} items - items to go through
  * @param {string} text - text to verify
  */
 const isUnique = (items, text) => {
     const lowered = text.toLowerCase();
+
     if (allowCreate && text.length) {
         return !Boolean(items.find((item) => item.label.toLowerCase() === lowered));
     }
     return false;
 }
 
+/**
+ * Opens a popup with list of items.
+ * Dynamically deduces height of list based on maxVisible number.
+ */
 const showPopup = () => {
     ref.readOnly = false;
 
@@ -81,7 +91,7 @@ const showPopup = () => {
 }
 
 /**
- * Hides a popup with items and sets provided item as selected.
+ * Hides a popup with items and updates input field with selected item.
  * @param {Item | undefined} item
  */
 const closePopup = (item) => {
@@ -98,7 +108,7 @@ const isPopupOpen = () => {
 }
 
 /**
- * Scrolls list to make item at given index visible.
+ * Scrolls list up or down to make item at given index visible.
  * @param {number} itemIndex
  */
 const scrollToItem = (itemIndex) => {
@@ -110,6 +120,7 @@ const scrollToItem = (itemIndex) => {
 
 /**
  * Called on item selection.
+ *
  * @param {Event} event
  * @param {Item} item
  */
@@ -120,6 +131,7 @@ const onSelect = (event, item) => {
 
 /**
  * Called on item creation.
+ *
  * @param {Event} _event
  * @param {string} text - text to create an item from
  */
@@ -149,6 +161,7 @@ const onFocusOut = () => {
 
 /**
  * Called on keydown event to react on up/down/enter/escape keys.
+ *
  * @param {KeyboardEvent} event
  * @listens KeyboardEvent
  */
