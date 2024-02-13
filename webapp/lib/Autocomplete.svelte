@@ -33,6 +33,9 @@ let highlightedItemIdx = -1;
 /** Reacts on pattern change by narrowing items list down to those matching new pattern */
 $: filteredItems = filter(items, pattern);
 
+/** Reacts on pattern change by verifying its uniqueness across all the items */
+$: isUniqueItem = isUnique(items, pattern);
+
 /**
  * Filters input items (on label) agains given pattern.
  *
@@ -46,10 +49,24 @@ const filter = (items, pattern) => {
     // highlight first item on a list only when
     // no empty pattern was already provided.
 
-    if (pattern && pattern.length) {
+    if (pattern.length) {
         highlightedItemIdx = 0;
     }
     return items.filter((item) => isEmpty || item.label.toLowerCase().includes(lowered));
+}
+
+/**
+ * Returns true if given text is unique across all the items labels.
+ * For performance reasons, verification happens only when allowCreate is on.
+ * @param {Item[]} items - items to go through
+ * @param {string} text - text to verify
+ */
+const isUnique = (items, text) => {
+    const lowered = text.toLowerCase();
+    if (allowCreate && text.length) {
+        return !Boolean(items.find((item) => item.label.toLowerCase() === lowered));
+    }
+    return false;
 }
 
 const showPopup = () => {
@@ -70,8 +87,8 @@ const showPopup = () => {
 }
 
 /**
- * Hides a popup with items and sets provided items as selected
- * @param {Item | undefined} item - an item to set as selected
+ * Hides a popup with items and sets provided item as selected.
+ * @param {Item | undefined} item
  */
 const closePopup = (item) => {
     if (!allowCreate && item) {
@@ -189,25 +206,22 @@ const onKeydown = (event) => {
         on:focusout={onFocusOut}/>
     <ul class="absolute hidden w-full p-1 overflow-y-auto overflow-x-hidden text-sm bg-white max-h-px focus:outline-none z-40"
         bind:this={popup}>
-        {#if filteredItems.length === 0}
-            {#if allowCreate}
-                <li class="selected flex gap-1 items-center min-h-[30px] border-1"
-                    on:mousedown={(e) => onCreate(e, pattern)}>
-                    <svg xmlns="http://www.w3.org/2000/svg"  width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>
-                    <span class="truncate text-ellipsis"> Create <strong>{pattern}</strong> </span>
-                </li>
-            {/if}
-        {:else}
-            {#each filteredItems as {label, icon}, idx}
-                <li class="flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
-                    data-item-index={idx}
-                    on:mousedown={(e) => onSelect(e, items[idx])}
-                    on:mouseup={(e) => onSelect(e, items[idx])}>
-                    {@html icon}
-                    <span>{label}</span>
-                </li>
-            {/each}
+        {#if allowCreate && isUniqueItem}
+            <li class="{filteredItems.length === 0 ? 'selected' : ''} unique flex gap-1 items-center min-h-[30px] border-1"
+                on:mousedown={(e) => onCreate(e, pattern)}>
+                <svg xmlns="http://www.w3.org/2000/svg"  width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>
+                <span class="truncate text-ellipsis"> Create <strong>{pattern}</strong> </span>
+            </li>
         {/if}
+        {#each filteredItems as {label, icon}, idx}
+            <li class="flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
+                data-item-index={idx}
+                on:mousedown={(e) => onSelect(e, items[idx])}
+                on:mouseup={(e) => onSelect(e, items[idx])}>
+                {@html icon}
+                <span>{label}</span>
+            </li>
+        {/each}
     </ul>
 </span>
 
@@ -223,11 +237,11 @@ const onKeydown = (event) => {
      box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
  }
  .autocomplete li:hover {
-     background-color: #eef;
+     background-color: var(--menu-item-highlighted);
      border-radius: 2px;
      cursor: pointer;
  }
  .autocomplete li.selected {
-     background-color: #eef;
+     background-color: var(--menu-item-highlighted)
  }
 </style>
