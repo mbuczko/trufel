@@ -22,6 +22,9 @@ let popup;
 /** @type {String} */
 let pattern = '';
 
+/** @type {boolean} */
+let waiting = false;
+
 /** @type {AutocompleteItem | undefined} */
 let selectedItem;
 
@@ -47,11 +50,22 @@ const filter = (items, pattern) => {
     const isEmpty = pattern.length === 0;
     const filtered = items.filter((item) => isEmpty || item.label.toLowerCase().includes(lowered));
     const isUnique = allowCreate && !isEmpty && !Boolean(filtered.find((item) => item.label.toLowerCase() === lowered));
-    
+
     if (isUnique) {
         filtered.unshift({id: '_create_', label: pattern, icon: createSvgIcon})
     }
     return filtered;
+}
+
+/**
+ * Sets given item as selected and updates input field accordingly.
+ *
+ * @param {AutocompleteItem | undefined} item
+ */
+
+const setSelected = (item) => {
+    selectedItem = item;
+    pattern = (item && item.label) || '';
 }
 
 /**
@@ -75,16 +89,10 @@ const showPopup = () => {
     }
 }
 
-/**
- * Hides a popup with items and updates input field with selected item.
- * @param {AutocompleteItem | undefined} item
- */
-const closePopup = (item) => {
+const closePopup = () => {
     if (!allowCreate) {
         input.readOnly = true;
     }
-    selectedItem = item;
-    pattern = (item && item.label) || '';
     popup.style.display = 'none';
 }
 
@@ -111,20 +119,37 @@ const scrollToItem = (itemIndex) => {
  */
 const onSelect = (event, item) => {
     event.preventDefault();
+    event.stopPropagation();
 
-    // react accordingly if "Create..." item has been selected
-    if (item.id === '_create_') {
+    if (item.id !== '_create_') {
+        setSelected(item);
+        closePopup()
+    } else {
+        let currentItem = selectedItem;
+
+        // note, waiting=true triggers onFocusOut event and closes a popup.
+        //
+        // optimistically assign selected item to provided one, and then in
+        // an event resolution callback update it again with real response.
+
+        selectedItem = item;
+        waiting = true;
+
         dispatch('create', {
             text: item.label,
             resolve: (/** @type {AutocompleteItem} */ item) => {
-                closePopup(item);
+                setTimeout(() => {
+                    waiting = false;
+                    setSelected(item);
+                }, 2000)
+
+            },
+            reject: () => {
+                waiting = false;
+                selectedItem = currentItem
             }
         });
-        // item = {label: item.label, id: '123', icon: ''};
-        // items.push(item);
-    } else {
-        closePopup(item);
-    }
+    };
 }
 
 const onFocus = () => {
@@ -143,7 +168,8 @@ const onFocus = () => {
 }
 
 const onFocusOut = () => {
-    closePopup(selectedItem);
+    setSelected(selectedItem);
+    closePopup();
 }
 
 /**
@@ -157,7 +183,7 @@ const onKeydown = (event) => {
         const item = highlightedItemIdx >= 0 && filteredItems[highlightedItemIdx];
 
         // if there is a valid item selected, just accept it.
-        // otherwise, it's unacceptable garbage - ignore the event.
+        // otherwise assume it's an unacceptable garbage and ignore event.
 
         if (item) {
             onSelect(event, item);
@@ -181,55 +207,62 @@ const onKeydown = (event) => {
         if (isPopupOpen()) {
             event.preventDefault();
             event.stopPropagation();
-            closePopup(selectedItem);
+            
+            setSelected(selectedItem);
+            closePopup();
         }
     } else if (allowCreate && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+
         // for allowCreate mode popup should be always displayed
         // as it contains possible choice between new item creation
         // and selection of already existing item, if entry matches
         // any of the items labels.
+
         showPopup();
     }
 }
 </script>
 
-<span class="autocomplete">
-    <input
-        type="text"
-        class="w-full text-sm bg-transparent border-0 rounded-md outline-none focus:outline-none focus:ring-0 focus:border-0 placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
-        placeholder={placeholder}
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-        bind:value={pattern}
-        bind:this={input}
-        on:mousedown={onFocus}
-        on:keydown={onKeydown}
-        on:focus={onFocus}
-        on:focusout={onFocusOut}/>
-    <ul class="absolute hidden w-full p-1 overflow-y-auto overflow-x-hidden text-sm bg-white max-h-px focus:outline-none z-40"
-        role="menu"
-        bind:this={popup}>
-        
-        {#each filteredItems as item, idx}
-            {@const {id, label, icon} = item}
-            <li class="flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
-                role="menuitem"
-                data-item-index={idx}
-                on:mousedown={(e) => onSelect(e, item)}
-                on:mouseup={(e) => onSelect(e, item)}>
-                {@html icon}
-                <span class="truncate text-ellipsis">
-                    {#if id === '_create_'}
-                        Create <strong>{pattern}</strong>
-                    {:else}
-                        {label}
-                    {/if}
-                </span>
-            </li>
-        {/each}
-    </ul>
-</span>
+<div class="flex relative">
+    <span class="autocomplete flex-1">
+        <input
+            type="text"
+            class="w-full text-sm bg-transparent border-0 rounded-md outline-none focus:outline-none focus:ring-0 focus:border-0 placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
+            placeholder={placeholder}
+            disabled={waiting}
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            bind:value={pattern}
+            bind:this={input}
+            on:mousedown={onFocus}
+            on:keydown={onKeydown}
+            on:focus={onFocus}
+            on:focusout={onFocusOut}/>
+        <ul class="absolute hidden w-full p-1 overflow-y-auto overflow-x-hidden text-sm bg-white max-h-px focus:outline-none z-40"
+            role="menu"
+            bind:this={popup}>
+            {#each filteredItems as item, idx}
+                {@const {id, label, icon} = item}
+                <li class="flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
+                    role="menuitem"
+                    data-item-index={idx}
+                    on:mousedown={(e) => onSelect(e, item)}
+                    on:mouseup={(e) => onSelect(e, item)}>
+                    {@html icon}
+                    <span class="truncate text-ellipsis">
+                        {#if id === '_create_'}
+                            Create <strong>{pattern}</strong>
+                        {:else}
+                            {label}
+                        {/if}
+                    </span>
+                </li>
+            {/each}
+        </ul>
+    </span>
+    <span class="loader absolute right-[5px] top-[5px] {waiting ? '' : 'invisible'}"></span>
+</div>
 
 <style>
  .autocomplete input:focus {
@@ -247,5 +280,24 @@ const onKeydown = (event) => {
      background-color: var(--menu-item-highlighted);
      border-radius: 2px;
      cursor: pointer;
+ }
+ .loader {
+     width: 20px;
+     height: 20px;
+     border: 3px solid #ddf;
+     border-bottom-color: #aaf;
+     border-radius: 50%;
+     display: inline-block;
+     box-sizing: border-box;
+     animation: rotation 1s linear infinite;
+ }
+
+ @keyframes rotation {
+     0% {
+         transform: rotate(0deg);
+     }
+     100% {
+         transform: rotate(360deg);
+     }
  }
 </style>
