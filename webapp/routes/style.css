@@ -38,6 +38,10 @@ dialog {
   input:focus {
     border: var(--dialog-border-active);
   }
+
+  input.error {
+    border-color: red !important;
+  }
 }
 
 .create-dialog {

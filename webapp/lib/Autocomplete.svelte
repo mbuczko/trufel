@@ -22,8 +22,11 @@ let popup;
 /** @type {String} */
 let pattern = '';
 
-/** @type {boolean} */
+/** @type {boolean} - new entry added, waiting for resolution */
 let waiting = false;
+
+/** @type {boolean} - failed adding new entry, input got rejected */
+let errored = false;
 
 /** @type {AutocompleteItem | undefined} */
 let selectedItem;
@@ -78,26 +81,23 @@ const showPopup = () => {
     popup.style.width = input.offsetWidth + 'px';
     popup.style.left = input.offsetLeft + 'px';
     popup.style.top = input.offsetTop + input.offsetHeight - 2 + 'px';
-    popup.style.display = 'block';
 
     // compute popup height based on individual item height * max items visible
     let children = popup.children;
     let first = children && children.length && children[0];
 
-    if (first) {
-        popup.style.maxHeight = (first.clientHeight * maxVisible + 9) + 'px';
-    }
+    popup.style.maxHeight = (first && (first.clientHeight * maxVisible + 9)) + 'px';
+    popup.classList.remove('invisible');
 }
 
 const closePopup = () => {
-    if (!allowCreate) {
-        input.readOnly = true;
-    }
-    popup.style.display = 'none';
+    errored = false;
+    input.readOnly = !allowCreate;
+    popup.classList.add('invisible');
 }
 
 const isPopupOpen = () => {
-    return popup.style.display !== 'none';
+    return !popup.classList.contains('invisible');
 }
 
 /**
@@ -125,7 +125,10 @@ const onSelect = (event, item) => {
         setSelected(item);
         closePopup()
     } else {
-        let currentItem = selectedItem;
+        // store previous item to be able to restore it
+        // in case when dispatched 'create' event fails.
+
+        let previous = selectedItem;
 
         // note, waiting=true triggers onFocusOut event and closes a popup.
         //
@@ -133,6 +136,7 @@ const onSelect = (event, item) => {
         // an event resolution callback update it again with real response.
 
         selectedItem = item;
+        errored = false;
         waiting = true;
 
         dispatch('create', {
@@ -145,8 +149,13 @@ const onSelect = (event, item) => {
 
             },
             reject: () => {
+                errored = true;
                 waiting = false;
-                selectedItem = currentItem
+                selectedItem = previous;
+
+                setTimeout(() => {
+                    input.focus();
+                }, 500);
             }
         });
     };
@@ -207,7 +216,7 @@ const onKeydown = (event) => {
         if (isPopupOpen()) {
             event.preventDefault();
             event.stopPropagation();
-            
+
             setSelected(selectedItem);
             closePopup();
         }
@@ -215,7 +224,7 @@ const onKeydown = (event) => {
 
         // for allowCreate mode popup should be always displayed
         // as it contains possible choice between new item creation
-        // and selection of already existing item, if entry matches
+        // and selection of listed suggestions, if entry matches
         // any of the items labels.
 
         showPopup();
@@ -224,10 +233,10 @@ const onKeydown = (event) => {
 </script>
 
 <div class="flex relative">
-    <span class="autocomplete flex-1">
+    <span class="autocomplete flex-1 {errored ? 'error' : ''}">
         <input
             type="text"
-            class="w-full text-sm bg-transparent border-0 rounded-md outline-none focus:outline-none focus:ring-0 focus:border-0 placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
+            class="w-full text-sm bg-transparent rounded-md focus:outline-none focus:ring-0 focus:border-0 placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
             placeholder={placeholder}
             disabled={waiting}
             autocomplete="off"
@@ -239,12 +248,23 @@ const onKeydown = (event) => {
             on:keydown={onKeydown}
             on:focus={onFocus}
             on:focusout={onFocusOut}/>
-        <ul class="absolute hidden w-full p-1 overflow-y-auto overflow-x-hidden text-sm bg-white max-h-px focus:outline-none z-40"
+        <ul class="invisible absolute w-full p-1 overflow-y-auto overflow-x-hidden text-sm bg-white max-h-px focus:outline-none z-40"
             role="menu"
             bind:this={popup}>
+            {#if !filteredItems.length}
+                <li class="autocomplete-empty-item flex gap-1 items-center min-h-[30px] border-1 px-1">
+                    {#if allowCreate}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><title>keyboard-settings</title><path d="M19,10H17V8H19M19,13H17V11H19M16,10H14V8H16M16,13H14V11H16M16,17H8V15H16M7,10H5V8H7M7,13H5V11H7M8,11H10V13H8M8,8H10V10H8M11,11H13V13H11M11,8H13V10H11M20,5H4A2,2 0 0,0 2,7V17A2,2 0 0,0 4,19H20A2,2 0 0,0 22,17V7A2,2 0 0,0 20,5M7,22H9V24H7V22M11,22H13V24H11V22M15,22H17V24H15V22Z" /></svg>
+                        <span> Nothing here yet... </span>
+                    {:else}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><title>minus-circle-outline</title><path d="M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M7,13H17V11H7" /></svg>
+                        <span> No suggestions </span>
+                    {/if}
+                </li>
+            {/if}
             {#each filteredItems as item, idx}
                 {@const {id, label, icon} = item}
-                <li class="flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
+                <li class="autocomplete-item flex gap-1 items-center min-h-[30px] border-1 {highlightedItemIdx === idx ? 'selected' : ''}"
                     role="menuitem"
                     data-item-index={idx}
                     on:mousedown={(e) => onSelect(e, item)}
@@ -275,11 +295,22 @@ const onKeydown = (event) => {
      border-radius: 0 0 3px 3px;
      box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
  }
- .autocomplete li.selected,
- .autocomplete li:hover {
+ .autocomplete.error input {
+     border-color: red;
+ }
+ .autocomplete.error ul {
+     border-color: red;
+ }
+ .autocomplete-item.selected,
+ .autocomplete-item:hover {
      background-color: var(--menu-item-highlighted);
      border-radius: 2px;
      cursor: pointer;
+ }
+ .autocomplete-empty-item {
+     color: #aaa;
+     fill: #aaa;
+     font-size: 0.9em;
  }
  .loader {
      width: 20px;

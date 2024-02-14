@@ -65,7 +65,11 @@ export const openDialog = () => {
     defaultInput.focus()
 }
 
-const onNewCategory = ({detail: {text, resolve}}) => {
+/**
+ * Called on new category being added.
+ * @param {{detail: CreateCategoryEvent}} event
+ */
+const onNewCategory = ({detail: {text, resolve, reject}}) => {
     fetch('http://localhost:3030/categories', {
         method: 'POST',
         headers: {
@@ -75,12 +79,18 @@ const onNewCategory = ({detail: {text, resolve}}) => {
         },
         body: JSON.stringify({name: text})
     }).then((response) => {
+        if (response.status !== 200) {
+            throw "Request failed"
+        }
         return response.json();
     }).then(({id, name}) => {
         let category = { id, label: name, icon: categorySvgIcon };
 
         categories.push(category);
         resolve(category);
+    }).catch((e) => {
+        console.error(e);
+        reject(e);
     })
 }
 </script>
