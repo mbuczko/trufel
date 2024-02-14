@@ -17,7 +17,7 @@ let defaultInput;
 /** @type {boolean} */
 let iconView = false;
 
-/** @type {string} - SVG icon definition */
+/** @type {string} */
 let svgIcon = '';
 
 /** @type {string} */
