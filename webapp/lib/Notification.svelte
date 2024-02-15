@@ -2,6 +2,18 @@
 import { slide } from 'svelte/transition';
 import { quintInOut } from 'svelte/easing';
 import { notification } from '$lib/store';
+
+export let timeout = 5000;
+
+/** @type {number} */
+let timeoutId;
+
+notification.subscribe(_ => {
+    if (timeoutId) {
+        clearTimeout(timeoutId)
+    }
+    timeoutId = setTimeout(() => notification.set(''), timeout);
+})
 </script>
 
 {#if $notification}
