@@ -3,11 +3,11 @@ import './style.css';
 import CommandMenu from '$lib/CommandMenu.svelte';
 import CommandMenuItem from '$lib/CommandMenuItem.svelte';
 import CommandMenuSection from '$lib/CommandMenuSection.svelte';
-import Dialog from '$lib/Dialog.svelte';
 import { identity } from '$lib/store.js';
 import Spinner from '$lib/Spinner.svelte';
+import DetailsDialog from '$lib/DetailsDialog.svelte';
 
-/** @type {Dialog} */
+/** @type {DetailsDialog} */
 let dialog;
 
 function emoji() {
@@ -15,7 +15,7 @@ function emoji() {
 }
 
 function createEntry() {
-    dialog.openDialog();
+    dialog.open();
 }
 
 </script>
@@ -28,7 +28,7 @@ function createEntry() {
     <div class="text-slate-400"> <Spinner /> <span>waiting... </span></div>
 {:else if $identity.id}
     <div>
-        <Dialog bind:this={dialog} />
+        <DetailsDialog bind:this={dialog} />
         <div style="width: 300px">
             <CommandMenu>
                 <CommandMenuItem title="Create new entry..." action={createEntry}>

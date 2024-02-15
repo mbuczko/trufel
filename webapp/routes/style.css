@@ -3,14 +3,19 @@
   --dialog-border-color-active: rgb(0, 0, 200, 0.9);
   --dialog-border: 1px solid var(--dialog-border-color);
   --dialog-border-active: 1px solid var(--dialog-border-color-active);
+
   --dialog-button-submit-background: rgb(45, 45, 255);
+  --dialog-button-submit-color: rgb(255, 255, 255);
+  --dialog-button-background: rgb(255, 255, 255);
+  --dialog-button-color: var(--dialog-border-color-active);
+
   --dialog-button-active-shadow-color: rgb(150, 150, 255);
   --dialog-button-radius: 3px;
   --dialog-label-color: rgb(30, 30, 30);
   --menu-item-highlighted: rgb(240, 240, 255);
 }
 
-dialog {
+.modal {
   input[type=text] {
     border: var(--dialog-border);
     border-radius: var(--dialog-button-radius);
@@ -23,7 +28,7 @@ dialog {
     border: var(--dialog-border);
     border-radius: var(--dialog-button-radius);
     box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
-    color: white;
+    color: var(--dialog-button-submit-color);
     padding: 0 10px;
 
     &:disabled {
@@ -38,13 +43,6 @@ dialog {
   input:focus {
     border: var(--dialog-border-active);
   }
-
-  input.error {
-    border-color: red !important;
-  }
-}
-
-.create-dialog {
   label {
     font-size: 0.8em;
     color: var(--dialog-label-color);
@@ -61,13 +59,13 @@ dialog {
 }
 
 .form-buttons button {
-  background: white;
-  border: var(--dialog-border);
-  border-radius: var(--dialog-button-radius);
-  color: var(--dialog-border-color-active);
   padding: 0 10px;
   opacity: 0.9;
+  border: var(--dialog-border);
+  border-radius: var(--dialog-button-radius);
   box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
+  background: var(--dialog-button-background);
+  color: var(--dialog-button-color);
 
   &:hover {
     border: var(--dialog-border-active);
@@ -105,21 +103,21 @@ dialog {
 }
 
 .loader {
-     width: 20px;
-     height: 20px;
-     border: 3px solid #ddf;
-     border-bottom-color: #aaf;
-     border-radius: 50%;
-     display: inline-block;
-     box-sizing: border-box;
-     animation: rotation 1s linear infinite;
- }
+  width: 20px;
+  height: 20px;
+  border: 3px solid #ddf;
+  border-bottom-color: #aaf;
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+}
 
- @keyframes rotation {
-     0% {
-         transform: rotate(0deg);
-     }
-     100% {
-         transform: rotate(360deg);
-     }
- }
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
