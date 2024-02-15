@@ -2,7 +2,7 @@
 // @ts-nocheck
 
 import { onMount, setContext } from 'svelte';
-import { identity, keycloak } from '$lib/store.js';
+import { identity, keycloak } from '$lib/store';
 import Keycloak from 'keycloak-js';
 
 onMount(() => {

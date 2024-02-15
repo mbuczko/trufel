@@ -49,8 +49,8 @@ $: filteredItems = filter(items, pattern);
  * @param {string} pattern - pattern to apply on each item
  */
 const filter = (items, pattern) => {
-    const lowered = pattern.toLowerCase();
     const isEmpty = pattern.length === 0;
+    const lowered = pattern.toLowerCase();
     const filtered = items.filter((item) => isEmpty || item.label.toLowerCase().includes(lowered));
     const isUnique = allowCreate && !isEmpty && !Boolean(filtered.find((item) => item.label.toLowerCase() === lowered));
 
@@ -65,7 +65,6 @@ const filter = (items, pattern) => {
  *
  * @param {AutocompleteItem | undefined} item
  */
-
 const setSelected = (item) => {
     selectedItem = item;
     pattern = (item && item.label) || '';
@@ -156,7 +155,7 @@ const onSelect = (event, item) => {
 
                 setTimeout(() => {
                     input.focus();
-                }, 500);
+                }, 100);
             }
         });
     };
@@ -234,7 +233,7 @@ const onKeydown = (event) => {
 </script>
 
 <div class="flex relative">
-    <span class="autocomplete flex-1 {errored ? 'error' : ''}">
+    <span class="autocomplete flex-1">
         <span class="loader absolute right-[5px] top-[5px] {waiting ? '' : 'invisible'}"></span>
         <input
             type="text"

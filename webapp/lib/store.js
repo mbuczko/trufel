@@ -1,7 +1,13 @@
 import { readable, writable } from 'svelte/store';
 import { dev } from '$app/environment';
 
+/** @type import('svelte/store').Writable<String> */
+export const notification = writable('');
+
 export const apiHost = readable(dev ? 'http://localhost:8002' : '');
+
+export const keycloak = writable({});
+
 export const identity = writable({
 	id: null,
 	firstName: null,
@@ -12,4 +18,5 @@ export const identity = writable({
 		picture: null
 	}
 });
-export const keycloak = writable({});
+
+

@@ -1,9 +1,8 @@
 <script>
-import { identity } from '$lib/store.js';
-import Spinner from '$lib/Spinner.svelte';
 import Login from 'svelte-material-icons/Login.svelte';
 import Logout from 'svelte-material-icons/Logout.svelte';
 import { getContext } from 'svelte';
+import { identity } from '$lib/store';
 
 const defaultPicture = '/avatar.jpg';
 const { login, logout } = getContext('auth');

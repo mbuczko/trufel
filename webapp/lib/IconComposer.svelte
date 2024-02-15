@@ -54,7 +54,7 @@ const intoSvg = (svg) => {
                     <path d="M12.1575 9.90759L3.19359 18.8714C2.63313 19.3991 2.61799 20.2851 3.16011 20.8317C3.70733 21.3834 4.60355 21.3694 5.13325 20.8008L13.9787 11.9552" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-darkreader-inline-stroke="" style="--darkreader-inline-stroke: currentColor;"></path><path d="M5 6.25V3.75M3.75 5H6.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-darkreader-inline-stroke="" style="--darkreader-inline-stroke: currentColor;"></path><path d="M18 20.25V17.75M16.75 19H19.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-darkreader-inline-stroke="" style="--darkreader-inline-stroke: currentColor;"></path>
                 </g>
             </svg>
-            <strong class="font-semibold"> SVG icon </strong>
+            <strong class="font-semibold"> Icons </strong>
         </span>
         <span slot="description">
             Head over to <a href="https://pictogrammers.com/library/mdi" target="_blank">pictogrammers.com</a> for some inspiration!

@@ -4,7 +4,8 @@ import Toggle from './Toggle.svelte';
 import IconsComposer from './IconComposer.svelte';
 import Autocomplete from './Autocomplete.svelte';
 import { getContext } from 'svelte';
-import { Icons } from '$lib/icons.js';
+import { Icons } from '$lib/icons';
+import { notification } from '$lib/store';
 
 const {getAuthClient} = getContext('auth');
 
@@ -58,8 +59,6 @@ let types = [
 ]
 
 const init = () => {
-    console.log('initializing');
-
     url = '';
     title = '';
     description = '';
@@ -96,7 +95,7 @@ const onNewCategory = ({detail: {text, resolve, reject}}) => {
         .resolve(e)
         .then(err => {
             err ||= "Request failed";
-            console.error(err);
+            notification.set(err);
             reject(err);
         }
     ))

@@ -1,5 +1,7 @@
 <script>
 import { createEventDispatcher } from "svelte";
+import Notification from "./Notification.svelte";
+import { notification } from "./store";
 
 const dispatch = createEventDispatcher();
 
@@ -10,6 +12,7 @@ export let maxH = 270;
 let ref;
 
 export const open = () => {
+    notification.set('');
     dispatch('init')
     ref.showModal();
 }
@@ -17,6 +20,7 @@ export const open = () => {
 
 <dialog class="modal w-full min-w-[{minW}px] max-w-screen-md max-h-[{maxH}px] bg-slate-500 shadow-md border-1 rounded-lg"
         bind:this={ref}>
+    <Notification />
     <div class="flex">
         <slot />
     </div>

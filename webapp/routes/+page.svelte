@@ -3,9 +3,9 @@ import './style.css';
 import CommandMenu from '$lib/CommandMenu.svelte';
 import CommandMenuItem from '$lib/CommandMenuItem.svelte';
 import CommandMenuSection from '$lib/CommandMenuSection.svelte';
-import { identity } from '$lib/store.js';
 import Spinner from '$lib/Spinner.svelte';
 import DetailsDialog from '$lib/DetailsDialog.svelte';
+import { identity } from '$lib/store';
 
 /** @type {DetailsDialog} */
 let dialog;
