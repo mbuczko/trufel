@@ -235,6 +235,7 @@ const onKeydown = (event) => {
 
 <div class="flex relative">
     <span class="autocomplete flex-1 {errored ? 'error' : ''}">
+        <span class="loader absolute right-[5px] top-[5px] {waiting ? '' : 'invisible'}"></span>
         <input
             type="text"
             class="w-full text-sm bg-transparent rounded-md focus:outline-none focus:ring-0 focus:border-0 placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
@@ -282,7 +283,6 @@ const onKeydown = (event) => {
             {/each}
         </ul>
     </span>
-    <span class="loader absolute right-[5px] top-[5px] {waiting ? '' : 'invisible'}"></span>
 </div>
 
 <style>
