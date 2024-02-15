@@ -102,7 +102,7 @@ const isPopupOpen = () => {
 
 /**
  * Scrolls list up or down to make item at given index visible.
- * 
+ *
  * @param {number} itemIndex
  */
 const scrollToItem = (itemIndex) => {
@@ -268,7 +268,17 @@ const onKeydown = (event) => {
                     role="menuitem"
                     data-item-index={idx}
                     on:mousedown={(e) => onSelect(e, item)}
-                    on:mouseup={(e) => onSelect(e, item)}>
+                    on:mouseup={(e) => onSelect(e, item)}
+                    on:mouseenter={({target}) => {
+                        // @ts-ignore
+                        // this is because Safari doesn't add :hover when dragging
+                        target.classList.add('selected');
+                      }}
+                    on:mouseleave={({target}) => {
+                        // @ts-ignore
+                        // this is because Safari doesn't add :hover when dragging
+                        target.classList.remove('selected')
+                      }}>
                     {@html icon}
                     <span class="truncate text-ellipsis">
                         {#if id === '_create_'}
@@ -300,8 +310,7 @@ const onKeydown = (event) => {
  .autocomplete.error ul {
      border-color: red;
  }
- .autocomplete-item.selected,
- .autocomplete-item:hover {
+ .autocomplete-item.selected {
      background-color: var(--menu-item-highlighted);
      border-radius: 2px;
      cursor: pointer;
