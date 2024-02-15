@@ -1,6 +1,7 @@
 <script>
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { createEventDispatcher } from 'svelte';
+import { Icons } from '$lib/icons.js';
 import '$lib/types.js';
 
 /** @type {AutocompleteItem[]} */
@@ -11,7 +12,6 @@ export let allowCreate = false;
 export let maxVisible = 3;
 
 const dispatch = createEventDispatcher();
-const createSvgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><title>plus</title><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>';
 
 /** @type {HTMLInputElement} */
 let input;
@@ -55,7 +55,7 @@ const filter = (items, pattern) => {
     const isUnique = allowCreate && !isEmpty && !Boolean(filtered.find((item) => item.label.toLowerCase() === lowered));
 
     if (isUnique) {
-        filtered.unshift({id: '_create_', label: pattern, icon: createSvgIcon})
+        filtered.unshift({id: '_create_', label: pattern, icon: Icons.create})
     }
     return filtered;
 }
@@ -256,11 +256,9 @@ const onKeydown = (event) => {
             {#if !filteredItems.length}
                 <li class="autocomplete-empty-item flex gap-1 items-center min-h-[30px] border-1 px-1">
                     {#if allowCreate}
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><title>keyboard-settings</title><path d="M19,10H17V8H19M19,13H17V11H19M16,10H14V8H16M16,13H14V11H16M16,17H8V15H16M7,10H5V8H7M7,13H5V11H7M8,11H10V13H8M8,8H10V10H8M11,11H13V13H11M11,8H13V10H11M20,5H4A2,2 0 0,0 2,7V17A2,2 0 0,0 4,19H20A2,2 0 0,0 22,17V7A2,2 0 0,0 20,5M7,22H9V24H7V22M11,22H13V24H11V22M15,22H17V24H15V22Z" /></svg>
-                        <span> No suggestions yet... </span>
+                        {@html Icons.keys}  <span> No suggestions yet... </span>
                     {:else}
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><title>minus-circle-outline</title><path d="M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M7,13H17V11H7" /></svg>
-                        <span> No suggestions </span>
+                        {@html Icons.empty} <span> No suggestions </span>
                     {/if}
                 </li>
             {/if}
