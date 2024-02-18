@@ -25,9 +25,6 @@ let pattern = '';
 /** @type {boolean} - new entry added, waiting for resolution */
 let waiting = false;
 
-/** @type {boolean} - failed adding new entry, input got rejected */
-let errored = false;
-
 /** @type {AutocompleteItem | undefined} */
 let selectedItem;
 
@@ -90,7 +87,6 @@ const showPopup = () => {
 }
 
 const closePopup = () => {
-    errored = false;
     input.readOnly = !allowCreate;
     popup.classList.add('invisible');
 }
@@ -136,7 +132,6 @@ const onSelect = (event, item) => {
         // an event resolution callback update it again with real response.
 
         selectedItem = item;
-        errored = false;
         waiting = true;
 
         dispatch('create', {
@@ -145,11 +140,10 @@ const onSelect = (event, item) => {
                 setTimeout(() => {
                     waiting = false;
                     setSelected(item);
-                }, 2000)
+                }, 300)
 
             },
             reject: () => {
-                errored = true;
                 waiting = false;
                 selectedItem = previous;
 
@@ -302,12 +296,6 @@ const onKeydown = (event) => {
      border-top: none;
      border-radius: 0 0 3px 3px;
      box-shadow: 0 0 2px var(--dialog-button-active-shadow-color);
- }
- .autocomplete.error input {
-     border-color: red;
- }
- .autocomplete.error ul {
-     border-color: red;
  }
  .autocomplete-item.selected {
      background-color: var(--menu-item-highlighted);
