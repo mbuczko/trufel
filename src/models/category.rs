@@ -31,20 +31,21 @@ pub async fn fetch_categories(pool: &Pool<Sqlite>, user: &User) -> anyhow::Resul
 }
 
 pub async fn create_category(pool: &Pool<Sqlite>, user: &User, category_name: String) -> anyhow::Result<Category> {
-    Ok(Categories::create_new_category(pool, params!(Uuid::new_v4(), user.id, &category_name))
-       .await
-       .map(|row| {
-           let category_id = row.get(0);
-           let position = row.get(1);
+    Ok(
+        Categories::create_new_category(pool, params!(Uuid::new_v4(), user.id, &category_name))
+            .await
+            .map(|row| {
+                let category_id = row.get(0);
+                let position = row.get(1);
 
-           Category {
-               id: category_id,
-               name: category_name,
-               position
-           }
-       }).map_err(|e| {
-           tracing::error!(error = ?e, "Couldn't create new category");
-           InternalError::CategoriesCreate
-       })?
+                Category {
+                    id: category_id,
+                    name: category_name,
+                    position
+                }
+            }).map_err(|e| {
+                tracing::error!(error = ?e, "Couldn't create new category");
+                InternalError::CategoriesCreate
+            })?
     )
 }

@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Deserialize)]
-pub struct NewCategoryRequest {
+pub struct CategoryRequestPayload {
     name: String
 }
 
@@ -25,7 +25,7 @@ pub async fn categories(
 pub async fn add_category(
     State(pool): State<SqlitePool>,
     user: User,
-    Json(category): Json<NewCategoryRequest>
+    Json(category): Json<CategoryRequestPayload>
 ) -> Result<Json<Category>, ServiceError> {
     let category = create_category(&pool, &user, category.name).await?;
     Ok(Json(category))
