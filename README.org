@@ -1,3 +1,8 @@
-cd //opt/bitnami/keycloak/bin/
-./kcreg.sh config credentials --server http://localhost:8080 --realm rodzinks --client admin-cli
-./kcreg.sh get webapp --server http://localhost:8080 --realm rodzinks --client admin-cli
+# Trufel - a fancy app launcher with OIDC integration
+
+A side project attempt to combine Rust and Svelte to get a minimalistic full-stack architecture with slick UI connecting to axum server. Server side is smart enough to recognize authenticated requests and verify JWT tokens against Keycloak-configured keys.
+
+The general idea behind a project is to create a clone of [flame](https://github.com/pawelmalak/flame) as minimal as possible but extend it with more sophisticated authentication.
+
+It's still a work in progres...
+

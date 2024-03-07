@@ -1,6 +1,6 @@
 use hugsqlx::{params, HugSqlx};
 use serde::{Deserialize, Serialize};
-use sqlx::{sqlite::SqliteRow, Pool, Row, Sqlite};
+use sqlx::{Pool, Row, Sqlite};
 use uuid::Uuid;
 
 use crate::errors::InternalError;
