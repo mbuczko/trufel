@@ -2,6 +2,8 @@
 
 A side project attempt to combine Rust and Svelte to get a minimalistic full-stack architecture with slick UI connecting to axum server. Server side is smart enough to recognize authenticated requests and verify JWT tokens against Keycloak-configured keys.
 
+Makes use of [[https://github.com/mbuczko/hugsqlx][hugsqlx]].
+
 The general idea behind a project is to create a clone of [[https://github.com/pawelmalak/flame][flame]] as minimal as possible but extend it with more sophisticated authentication.
 
 It's still a work in progres...
