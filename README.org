@@ -1,8 +1,8 @@
-# Trufel - a fancy app launcher with OIDC integration
+* Trufel - a fancy app launcher with OIDC integration
 
 A side project attempt to combine Rust and Svelte to get a minimalistic full-stack architecture with slick UI connecting to axum server. Server side is smart enough to recognize authenticated requests and verify JWT tokens against Keycloak-configured keys.
 
-The general idea behind a project is to create a clone of [flame](https://github.com/pawelmalak/flame) as minimal as possible but extend it with more sophisticated authentication.
+The general idea behind a project is to create a clone of [[https://github.com/pawelmalak/flame][flame]] as minimal as possible but extend it with more sophisticated authentication.
 
 It's still a work in progres...
 
